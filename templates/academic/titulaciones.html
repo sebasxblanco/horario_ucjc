@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block titulo %}Titulaciones — Horarios UCJC{% endblock %}
+{% block contenido %}
+
+<!-- ── Cabecera ────────────────────────────────────────────────── -->
+<div style="display:flex; align-items:flex-start; justify-content:space-between;
+            flex-wrap:wrap; gap:1rem; margin-bottom:2rem;">
+    <div>
+        <h1 class="page-title">Plan de estudios</h1>
+        <p class="page-subtitle">
+            Titulaciones activas &nbsp;·&nbsp; cursos &nbsp;·&nbsp; asignaturas
+            &nbsp;—&nbsp;
+            <span style="font-size:.8rem; color:#9aa5b4;">
+                Las queries SQL se muestran en el debug-toolbar (panel derecho)
+            </span>
+        </p>
+    </div>
+    <a href="/admin/academic/asignatura/add/" class="btn btn-primary">
+        + Nueva asignatura
+    </a>
+</div>
+
+<!-- ── Titulaciones ─────────────────────────────────────────────── -->
+{% for titulacion in titulaciones %}
+<div class="card" style="margin-bottom:1.5rem;">
+
+    <!-- Cabecera titulación -->
+    <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:1.25rem;
+                padding-bottom:1rem; border-bottom:1px solid var(--border);">
+        <div style="width:42px; height:42px; border-radius:10px;
+                    background:var(--navy); display:flex; align-items:center;
+                    justify-content:center; font-weight:800; font-size:.85rem;
+                    color:var(--gold); flex-shrink:0; letter-spacing:-.5px;">
+            {{ titulacion.codigo }}
+        </div>
+        <div>
+            <h2 style="font-size:1.1rem; font-weight:700; color:var(--navy);
+                       margin:0 0 .15rem;">
+                {{ titulacion.nombre }}
+            </h2>
+            <span style="font-size:.75rem; color:var(--muted);">
+                Código &nbsp;<strong>{{ titulacion.codigo }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Cursos -->
+    {% for curso in titulacion.cursos.all %}
+    <div class="course-block">
+
+        <div class="course-label">
+            <span>📅</span>
+            <span>{{ curso.numero }}º curso</span>
+            {% if curso.es_ultimo %}
+                <span class="badge badge-gold" style="margin-left:.25rem;">
+                    🌙 Solo tarde
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Tabla de asignaturas -->
+        {% if curso.asignaturas.all %}
+        <div class="table-wrap" style="padding-left:.5rem;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:110px;">Código</th>
+                        <th>Asignatura</th>
+                        <th style="text-align:center; width:120px;">Sesiones/sem</th>
+                        <th style="text-align:center; width:100px;">Horas/ses</th>
+                        <th style="text-align:center; width:110px;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asig in curso.asignaturas.all %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-muted"
+                                  style="font-family:monospace; font-size:.73rem;">
+                                {{ asig.codigo }}
+                            </span>
+                        </td>
+                        <td style="font-weight:500;">{{ asig.nombre }}</td>
+                        <td style="text-align:center; color:var(--muted);">
+                            {{ asig.sesiones_semana }}
+                        </td>
+                        <td style="text-align:center; color:var(--muted);">
+                            {{ asig.horas_sesion }}h
+                        </td>
+                        <td style="text-align:center;">
+                            {% if asig.es_compartida %}
+                                <span class="badge badge-green">Compartida</span>
+                            {% else %}
+                                <span class="badge badge-muted">Única</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color:var(--muted); font-size:.85rem; padding:.5rem .75rem;
+                  font-style:italic;">
+            Sin asignaturas registradas en este curso.
+        </p>
+        {% endif %}
+
+    </div>
+    {% empty %}
+    <p style="color:var(--muted); font-size:.9rem; font-style:italic;">
+        Esta titulación no tiene cursos configurados.
+    </p>
+    {% endfor %}
+
+</div>
+{% empty %}
+<div class="card" style="text-align:center; padding:3rem 1.5rem;">
+    <div style="font-size:2.5rem; margin-bottom:.75rem;">🎓</div>
+    <h2 style="color:var(--navy); margin-bottom:.5rem;">Sin titulaciones</h2>
+    <p style="color:var(--muted); margin-bottom:1.5rem;">
+        Aún no hay titulaciones activas en el sistema.
+    </p>
+    <a href="/admin/academic/titulacion/add/" class="btn btn-primary">
+        Crear primera titulación →
+    </a>
+</div>
+{% endfor %}
+
+{% endblock %}

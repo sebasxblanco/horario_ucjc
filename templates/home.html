@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block titulo %}Inicio — Horarios UCJC{% endblock %}
+{% block contenido %}
+
+<!-- ── Cabecera ────────────────────────────────────────────────── -->
+<div style="margin-bottom:2rem;">
+    <h1 class="page-title">Panel de control</h1>
+    <p class="page-subtitle">
+        Gestión de horarios académicos &nbsp;·&nbsp; Escuela Politécnica UCJC
+    </p>
+</div>
+
+<!-- ── Stats ──────────────────────────────────────────────────── -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon navy">🎓</div>
+        <div>
+            <div class="stat-num">{{ total_titulaciones }}</div>
+            <div class="stat-label">Titulaciones activas</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">📖</div>
+        <div>
+            <div class="stat-num">{{ total_asignaturas }}</div>
+            <div class="stat-label">Asignaturas</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon gold">👤</div>
+        <div>
+            <div class="stat-num">{{ total_profesores }}</div>
+            <div class="stat-label">Profesores</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Fila principal ──────────────────────────────────────────── -->
+<div style="display:grid; grid-template-columns:1fr 320px; gap:1.25rem;
+            align-items:start;">
+
+    <!-- Titulaciones activas -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">
+                🎓 Titulaciones activas
+            </span>
+            <a href="/academic/titulaciones/" class="btn btn-outline btn-sm">
+                Ver plan de estudios →
+            </a>
+        </div>
+
+        {% if titulaciones %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Titulación</th>
+                        <th style="text-align:center;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in titulaciones %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-navy">{{ t.codigo }}</span>
+                        </td>
+                        <td style="font-weight:500;">{{ t.nombre }}</td>
+                        <td style="text-align:center;">
+                            <span class="badge badge-green">Activa</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color:var(--muted); font-size:.9rem;">
+            Sin titulaciones aún.
+            <a href="/admin/" style="color:var(--accent-blue);">Añade datos desde el admin →</a>
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Accesos rápidos -->
+    <div>
+        <div class="card">
+            <div class="card-header" style="margin-bottom:1rem;">
+                <span class="card-title">Accesos rápidos</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:.6rem;">
+                <a href="/academic/titulaciones/" class="action-item">
+                    <div class="action-icon">📚</div>
+                    <div>
+                        <div class="action-text">Plan de estudios</div>
+                        <div class="action-desc">Titulaciones, cursos y asignaturas</div>
+                    </div>
+                </a>
+                <a href="/admin/" class="action-item">
+                    <div class="action-icon">⚙️</div>
+                    <div>
+                        <div class="action-text">Administración</div>
+                        <div class="action-desc">Gestión de datos del sistema</div>
+                    </div>
+                </a>
+                <a href="/admin/academic/bloquehorario/" class="action-item">
+                    <div class="action-icon">🕐</div>
+                    <div>
+                        <div class="action-text">Bloques horarios</div>
+                        <div class="action-desc">Configurar franjas horarias</div>
+                    </div>
+                </a>
+                <a href="/admin/academic/profesor/" class="action-item">
+                    <div class="action-icon">👨‍🏫</div>
+                    <div>
+                        <div class="action-text">Profesores</div>
+                        <div class="action-desc">Disponibilidad y asignaciones</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Estado del sistema -->
+        <div class="card">
+            <div class="card-title" style="margin-bottom:.75rem;">Estado del sistema</div>
+            <div style="display:flex; flex-direction:column; gap:.5rem; font-size:.83rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--muted);">Base de datos</span>
+                    <span class="badge badge-green">✓ Conectada</span>
+                </div>
+                <div class="divider" style="margin:.4rem 0;"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--muted);">Debug toolbar</span>
+                    <span class="badge badge-navy">Activo</span>
+                </div>
+                <div class="divider" style="margin:.4rem 0;"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--muted);">Versión Django</span>
+                    <span style="color:var(--text); font-weight:500;">5.2</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

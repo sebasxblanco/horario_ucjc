@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Horarios UCJC{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/estilos_pro.css' %}">
+    {% block estilos_extra %}{% endblock %}
+</head>
+<body>
+
+<!-- ── NAVBAR ─────────────────────────────────────────────── -->
+<nav class="navbar">
+    <div class="navbar-inner">
+
+        <a href="/" class="nav-brand">
+            <div class="nav-logo-box">UC</div>
+            <div>
+                <span class="nav-brand-text">Horarios UCJC</span>
+                <span class="nav-brand-sub">Escuela Politécnica</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/academic/titulaciones/">Titulaciones</a></li>
+            <li><div class="nav-sep"></div></li>
+            {% if user.is_authenticated %}
+                <li><a href="/admin/">Administración</a></li>
+                <li>
+                    <div class="nav-user">
+                        <div class="nav-user-avatar">{{ user.username|first }}</div>
+                        <a href="/accounts/logout/">Salir</a>
+                    </div>
+                </li>
+            {% else %}
+                <li><a href="/accounts/login/">Iniciar sesión</a></li>
+            {% endif %}
+        </ul>
+
+    </div>
+</nav>
+
+<!-- ── CONTENIDO ──────────────────────────────────────────── -->
+<main>
+    {% block contenido %}{% endblock %}
+</main>
+
+<!-- ── FOOTER ─────────────────────────────────────────────── -->
+<footer class="footer">
+    <strong>Sistema de Gestión de Horarios</strong> &nbsp;·&nbsp;
+    Universidad Camilo José Cela &nbsp;·&nbsp; © 2025
+</footer>
+
+{% block scripts_extra %}{% endblock %}
+</body>
+</html>
