@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titulo %}Eliminar {{ asignatura.nombre }} — Horarios UCJC{% endblock %}
+{% block top_titulo %}Academic Planner{% endblock %}
+
+{% block contenido %}
+
+<div class="max-w-md mx-auto">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-xs text-dim mb-6">
+        <a href="{% url 'academic:titulaciones' %}"
+           class="hover:text-ink transition-colors">Gestor de Asignaturas</a>
+        <span class="material-symbols-outlined opacity-40" style="font-size:14px;">chevron_right</span>
+        <span class="text-ink font-medium">Eliminar asignatura</span>
+    </div>
+
+    <div class="bg-surface rounded-2xl border border-burg/30
+                shadow-[0_8px_40px_rgba(128,0,32,0.2)] overflow-hidden">
+
+        <!-- Cabecera de alerta -->
+        <div class="px-8 pt-7 pb-5 border-b border-stroke flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-burg/20 border border-burg/30
+                        flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-burg-light" style="font-size:20px;">
+                    warning
+                </span>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-ink">Confirmar eliminación</h2>
+                <p class="text-sm text-dim mt-0.5">Esta acción no se puede deshacer.</p>
+            </div>
+        </div>
+
+        <div class="px-8 py-6 flex flex-col gap-5">
+
+            <!-- Info asignatura -->
+            <div class="bg-raised rounded-xl border border-stroke p-4">
+                <p class="text-[11px] font-bold text-dim uppercase tracking-widest mb-2">
+                    Asignatura a eliminar
+                </p>
+                <div class="flex items-center gap-3">
+                    <span class="bg-burg/20 text-burg-light text-xs font-bold
+                                 px-2 py-1 rounded-md border border-burg/20">
+                        {{ asignatura.codigo }}
+                    </span>
+                    <span class="font-semibold text-ink">{{ asignatura.nombre }}</span>
+                </div>
+                <p class="text-xs text-dim mt-2">
+                    {{ asignatura.curso.numero }}º curso ·
+                    {{ asignatura.curso.titulacion.nombre }}
+                </p>
+            </div>
+
+            <p class="text-sm text-dim leading-relaxed">
+                ¿Estás seguro de que deseas eliminar esta asignatura?
+                Si tiene sesiones asignadas en el horario, también se eliminarán.
+            </p>
+
+            <!-- Acciones -->
+            <form method="post" class="flex items-center gap-3">
+                {% csrf_token %}
+                <button type="submit"
+                        class="flex items-center gap-2 px-5 py-2.5 rounded-lg
+                               bg-burg hover:bg-burg-dark text-ink font-bold text-sm
+                               transition-colors shadow-lg">
+                    <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+                    Sí, eliminar
+                </button>
+                <a href="{% url 'academic:titulaciones' %}"
+                   class="flex items-center gap-2 px-5 py-2.5 rounded-lg
+                          bg-raised border border-stroke text-dim font-semibold text-sm
+                          hover:text-ink transition-colors">
+                    Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

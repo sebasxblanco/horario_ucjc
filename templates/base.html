@@ -5,54 +5,270 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}Horarios UCJC{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/estilos_pro.css' %}">
+
+    <!-- Tailwind CSS compilado localmente (django-tailwind-cli) -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+
     {% block estilos_extra %}{% endblock %}
 </head>
-<body>
 
-<!-- ── NAVBAR ─────────────────────────────────────────────── -->
-<nav class="navbar">
-    <div class="navbar-inner">
+<body class="bg-bg text-ink antialiased overflow-hidden flex">
 
-        <a href="/" class="nav-brand">
-            <div class="nav-logo-box">UC</div>
-            <div>
-                <span class="nav-brand-text">Horarios UCJC</span>
-                <span class="nav-brand-sub">Escuela Politécnica</span>
-            </div>
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<nav class="fixed left-0 top-0 h-screen w-64 bg-surface border-r border-stroke
+            flex flex-col p-4 z-40 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 mb-8 px-2">
+        <div class="w-10 h-10 rounded-xl bg-burg flex items-center justify-center
+                    text-ink font-black text-sm tracking-tight shadow-lg flex-shrink-0
+                    ring-1 ring-white/10">
+            UC
+        </div>
+        <div>
+            <h1 class="text-[15px] font-black text-ink tracking-tight leading-tight">
+                Horarios UCJC
+            </h1>
+            <p class="text-[10px] font-medium text-dim uppercase tracking-widest leading-tight mt-0.5">
+                Escuela Politécnica
+            </p>
+        </div>
+    </div>
+
+    <!-- Nav principal -->
+    <div class="flex flex-col gap-1 flex-1">
+
+        <a href="/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  transition-all duration-150 active:scale-[0.98]
+                  {% if request.path == '/' %}
+                      bg-deep text-burg-light font-semibold
+                  {% else %}
+                      text-dim hover:bg-raised hover:text-ink
+                  {% endif %}">
+            <span class="material-symbols-outlined">dashboard</span>
+            Dashboard
         </a>
 
-        <ul class="nav-links">
-            <li><a href="/">Inicio</a></li>
-            <li><a href="/academic/titulaciones/">Titulaciones</a></li>
-            <li><div class="nav-sep"></div></li>
-            {% if user.is_authenticated %}
-                <li><a href="/admin/">Administración</a></li>
-                <li>
-                    <div class="nav-user">
-                        <div class="nav-user-avatar">{{ user.username|first }}</div>
-                        <a href="/accounts/logout/">Salir</a>
-                    </div>
-                </li>
-            {% else %}
-                <li><a href="/accounts/login/">Iniciar sesión</a></li>
-            {% endif %}
-        </ul>
+        <a href="/academic/titulaciones/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  transition-all duration-150 active:scale-[0.98]
+                  {% if '/academic/titulaciones' in request.path %}
+                      bg-deep text-burg-light font-semibold
+                  {% else %}
+                      text-dim hover:bg-raised hover:text-ink
+                  {% endif %}">
+            <span class="material-symbols-outlined">menu_book</span>
+            Gestor de Asignaturas
+        </a>
+
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  cursor-not-allowed select-none opacity-35">
+            <span class="material-symbols-outlined">auto_awesome_motion</span>
+            Generador de Horarios
+            <span class="ml-auto text-[9px] bg-raised text-dim px-1.5 py-0.5
+                         rounded font-bold uppercase tracking-wide">
+                Próx.
+            </span>
+        </a>
+
+        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  cursor-not-allowed select-none opacity-35">
+            <span class="material-symbols-outlined">bookmarks</span>
+            Horarios Guardados
+            <span class="ml-auto text-[9px] bg-raised text-dim px-1.5 py-0.5
+                         rounded font-bold uppercase tracking-wide">
+                Próx.
+            </span>
+        </a>
+
+    </div>
+
+    <!-- CTA -->
+    <div class="mb-4 px-2">
+        <a href="/admin/academic/asignatura/add/"
+           class="flex items-center justify-center gap-2 w-full bg-burg text-ink
+                  text-sm font-bold py-2.5 rounded-lg hover:bg-burg-light
+                  transition-colors shadow-lg ring-1 ring-white/5">
+            <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+            Nueva Asignatura
+        </a>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex flex-col gap-1 pt-4 border-t border-stroke">
+
+        {% if user.is_authenticated %}
+        <!-- Info de usuario + badge de rol -->
+        <div class="flex items-center gap-3 px-4 py-2.5 mb-1">
+            <div class="w-7 h-7 rounded-full bg-burg flex items-center justify-center
+                        text-ink text-xs font-bold uppercase flex-shrink-0">
+                {{ user.username|first }}
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs font-semibold text-ink truncate">{{ user.username }}</p>
+                <p class="text-[10px] text-dim truncate">
+                    {% if user.rol %}{{ user.get_rol_display }}{% else %}Administrador{% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if user.is_staff %}
+        <a href="/admin/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  text-dim hover:bg-raised hover:text-ink transition-all">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            Administración
+        </a>
+        {% endif %}
+
+        <!-- Logout: formulario POST requerido en Django 5 -->
+        <form method="post" action="/accounts/logout/">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                           text-dim hover:bg-raised hover:text-burg-light transition-all text-left">
+                <span class="material-symbols-outlined">logout</span>
+                Cerrar sesión
+            </button>
+        </form>
+
+        {% else %}
+        <!-- No autenticado -->
+        <a href="/accounts/login/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  text-dim hover:bg-raised hover:text-ink transition-all">
+            <span class="material-symbols-outlined">login</span>
+            Iniciar sesión
+        </a>
+        {% endif %}
+
+        <a href="#"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  text-dim hover:bg-raised hover:text-ink transition-all">
+            <span class="material-symbols-outlined">help</span>
+            Soporte
+        </a>
 
     </div>
 </nav>
 
-<!-- ── CONTENIDO ──────────────────────────────────────────── -->
-<main>
-    {% block contenido %}{% endblock %}
+<!-- ══════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════ -->
+<main class="ml-64 flex-1 h-screen flex flex-col overflow-hidden">
+
+    <!-- Top bar -->
+    <header class="sticky top-0 w-full flex justify-between items-center px-8 z-30
+                   bg-surface/80 backdrop-blur-md border-b border-stroke h-16 flex-shrink-0">
+        <div class="flex items-center gap-6">
+            <span class="text-[15px] font-bold text-ink">
+                {% block top_titulo %}Horarios UCJC{% endblock %}
+            </span>
+            {% block top_tabs %}{% endblock %}
+        </div>
+        <div class="flex items-center gap-1">
+            <button class="w-9 h-9 flex items-center justify-center rounded-full
+                           text-dim hover:text-ink hover:bg-raised transition-all">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+
+            {% if user.is_authenticated %}
+            <!-- Dropdown de usuario — usa <details> (sin JS) -->
+            <details class="relative ml-1" id="user-menu">
+                <summary class="list-none cursor-pointer">
+                    <div class="w-8 h-8 rounded-full bg-burg flex items-center justify-center
+                                text-ink text-xs font-bold uppercase select-none
+                                hover:ring-2 hover:ring-burg-light transition-all">
+                        {{ user.username|first }}
+                    </div>
+                </summary>
+
+                <!-- Panel desplegable -->
+                <div class="absolute right-0 top-10 w-56 bg-surface border border-stroke
+                            rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 overflow-hidden">
+
+                    <!-- Info usuario -->
+                    <div class="px-4 py-3.5 border-b border-stroke">
+                        <p class="text-xs font-bold text-ink truncate">{{ user.username }}</p>
+                        <p class="text-[11px] text-dim mt-0.5 truncate">
+                            {% if user.rol %}{{ user.get_rol_display }}
+                            {% else %}Administrador{% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="py-1.5">
+                        {% if user.is_staff %}
+                        <a href="/admin/"
+                           class="flex items-center gap-3 px-4 py-2 text-sm text-dim
+                                  hover:bg-raised hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:16px;">
+                                admin_panel_settings
+                            </span>
+                            Administración
+                        </a>
+                        {% endif %}
+                        <a href="/accounts/login/?next={{ request.path }}"
+                           class="flex items-center gap-3 px-4 py-2 text-sm text-dim
+                                  hover:bg-raised hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:16px;">
+                                swap_horiz
+                            </span>
+                            Cambiar cuenta
+                        </a>
+                    </div>
+
+                    <!-- Cerrar sesión (POST) -->
+                    <div class="border-t border-stroke py-1.5">
+                        <form method="post" action="/accounts/logout/">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="w-full flex items-center gap-3 px-4 py-2 text-sm
+                                           text-burg-light hover:bg-burg/10 transition-colors text-left">
+                                <span class="material-symbols-outlined" style="font-size:16px;">
+                                    logout
+                                </span>
+                                Cerrar sesión
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </details>
+
+            {% else %}
+            <a href="/accounts/login/"
+               class="w-9 h-9 flex items-center justify-center rounded-full
+                      text-dim hover:text-ink hover:bg-raised transition-all"
+               title="Iniciar sesión">
+                <span class="material-symbols-outlined"
+                      style="font-variation-settings:'FILL' 1;">account_circle</span>
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Contenido scrollable -->
+    <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+        {% block contenido %}{% endblock %}
+    </div>
+
 </main>
 
-<!-- ── FOOTER ─────────────────────────────────────────────── -->
-<footer class="footer">
-    <strong>Sistema de Gestión de Horarios</strong> &nbsp;·&nbsp;
-    Universidad Camilo José Cela &nbsp;·&nbsp; © 2025
-</footer>
-
 {% block scripts_extra %}{% endblock %}
+
+<script>
+// Cierra el dropdown de usuario al hacer click fuera de él
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('user-menu');
+    if (menu && !menu.contains(e.target)) {
+        menu.removeAttribute('open');
+    }
+});
+</script>
 </body>
 </html>

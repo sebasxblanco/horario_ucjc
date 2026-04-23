@@ -54,6 +54,13 @@ class Asignatura(models.Model):
         Curso, on_delete=models.CASCADE,
         related_name='asignaturas', verbose_name='Curso'
     )
+    class Semestre(models.IntegerChoices):
+        PRIMERO  = 1, 'Semestre 1'
+        SEGUNDO  = 2, 'Semestre 2'
+
+    semestre        = models.IntegerField(
+        choices=Semestre.choices, default=Semestre.PRIMERO, verbose_name='Semestre'
+    )
     horas_sesion    = models.PositiveSmallIntegerField(default=2, verbose_name='Horas por sesión')
     sesiones_semana = models.PositiveSmallIntegerField(default=2, verbose_name='Sesiones por semana')
     es_compartida   = models.BooleanField(

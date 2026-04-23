@@ -1,130 +1,397 @@
 {% extends "base.html" %}
-{% block titulo %}Titulaciones — Horarios UCJC{% endblock %}
+{% block titulo %}Gestor de Asignaturas — Horarios UCJC{% endblock %}
+{% block top_titulo %}Academic Planner{% endblock %}
+
 {% block contenido %}
 
-<!-- ── Cabecera ────────────────────────────────────────────────── -->
-<div style="display:flex; align-items:flex-start; justify-content:space-between;
-            flex-wrap:wrap; gap:1rem; margin-bottom:2rem;">
+<!-- ─────────────────────────────────────────────
+     CABECERA
+───────────────────────────────────────────── -->
+<div class="mb-5 flex justify-between items-end flex-wrap gap-3">
     <div>
-        <h1 class="page-title">Plan de estudios</h1>
-        <p class="page-subtitle">
-            Titulaciones activas &nbsp;·&nbsp; cursos &nbsp;·&nbsp; asignaturas
-            &nbsp;—&nbsp;
-            <span style="font-size:.8rem; color:#9aa5b4;">
-                Las queries SQL se muestran en el debug-toolbar (panel derecho)
-            </span>
-        </p>
+        <h2 class="text-3xl font-bold tracking-tight text-ink mb-1">Gestor de Asignaturas</h2>
+        <p class="text-sm text-dim">Vista semanal del plan de estudios por titulación y curso.</p>
     </div>
-    <a href="/admin/academic/asignatura/add/" class="btn btn-primary">
-        + Nueva asignatura
+    <a href="/admin/academic/asignatura/add/"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-burg text-ink
+              text-sm font-bold hover:bg-burg-light transition-colors shadow-lg">
+        <span class="material-symbols-outlined" style="font-size:16px;">add</span>
+        Nueva asignatura
     </a>
 </div>
 
-<!-- ── Titulaciones ─────────────────────────────────────────────── -->
-{% for titulacion in titulaciones %}
-<div class="card" style="margin-bottom:1.5rem;">
+<!-- ─────────────────────────────────────────────
+     BARRA DE FILTROS
+───────────────────────────────────────────── -->
+<form method="get" class="bg-surface border border-stroke rounded-xl p-4 mb-5 flex flex-wrap gap-4 items-end">
 
-    <!-- Cabecera titulación -->
-    <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:1.25rem;
-                padding-bottom:1rem; border-bottom:1px solid var(--border);">
-        <div style="width:42px; height:42px; border-radius:10px;
-                    background:var(--navy); display:flex; align-items:center;
-                    justify-content:center; font-weight:800; font-size:.85rem;
-                    color:var(--gold); flex-shrink:0; letter-spacing:-.5px;">
-            {{ titulacion.codigo }}
-        </div>
-        <div>
-            <h2 style="font-size:1.1rem; font-weight:700; color:var(--navy);
-                       margin:0 0 .15rem;">
-                {{ titulacion.nombre }}
-            </h2>
-            <span style="font-size:.75rem; color:var(--muted);">
-                Código &nbsp;<strong>{{ titulacion.codigo }}</strong>
-            </span>
+    <!-- Titulación -->
+    <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold text-dim uppercase tracking-widest">Titulación</label>
+        <div class="flex gap-1 flex-wrap">
+            {% for t in titulaciones %}
+            <a href="?titulacion={{ t.codigo }}&semestre={{ semestre }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                      {% if titulacion_sel.codigo == t.codigo %}
+                          bg-burg text-ink border-burg
+                      {% else %}
+                          bg-raised text-dim border-stroke hover:border-burg/50 hover:text-ink
+                      {% endif %}">
+                {{ t.codigo }}
+            </a>
+            {% empty %}
+            <span class="text-xs text-dim italic">Sin titulaciones</span>
+            {% endfor %}
         </div>
     </div>
 
-    <!-- Cursos -->
-    {% for curso in titulacion.cursos.all %}
-    <div class="course-block">
+    <!-- Curso -->
+    {% if cursos %}
+    <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold text-dim uppercase tracking-widest">Curso</label>
+        <div class="flex gap-1">
+            {% for c in cursos %}
+            <a href="?titulacion={{ titulacion_sel.codigo }}&curso={{ c.numero }}&semestre={{ semestre }}"
+               class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                      {% if curso_sel.numero == c.numero %}
+                          bg-burg text-ink border-burg
+                      {% else %}
+                          bg-raised text-dim border-stroke hover:border-burg/50 hover:text-ink
+                      {% endif %}">
+                {{ c.numero }}º
+                {% if c.es_ultimo %}<span class="opacity-60">·tarde</span>{% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
-        <div class="course-label">
-            <span>📅</span>
-            <span>{{ curso.numero }}º curso</span>
-            {% if curso.es_ultimo %}
-                <span class="badge badge-gold" style="margin-left:.25rem;">
-                    🌙 Solo tarde
-                </span>
-            {% endif %}
+    <!-- Semestre -->
+    <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-bold text-dim uppercase tracking-widest">Semestre</label>
+        <div class="flex rounded-lg border border-stroke overflow-hidden text-xs font-bold">
+            <a href="?titulacion={{ titulacion_sel.codigo }}&curso={{ curso_sel.numero }}&semestre=1"
+               class="px-4 py-1.5 transition-colors
+                      {% if semestre == 1 %}bg-burg text-ink{% else %}bg-raised text-dim hover:text-ink{% endif %}">
+                S1
+            </a>
+            <a href="?titulacion={{ titulacion_sel.codigo }}&curso={{ curso_sel.numero }}&semestre=2"
+               class="px-4 py-1.5 border-l border-stroke transition-colors
+                      {% if semestre == 2 %}bg-burg text-ink{% else %}bg-raised text-dim hover:text-ink{% endif %}">
+                S2
+            </a>
+        </div>
+    </div>
+
+    <!-- Badge resumen -->
+    {% if titulacion_sel and curso_sel %}
+    <div class="ml-auto flex items-center gap-2 self-end pb-0.5">
+        <span class="bg-burg/10 text-burg-light text-[11px] font-bold
+                     px-2.5 py-1 rounded-full border border-burg/20">
+            {{ titulacion_sel.codigo }} · {{ curso_sel.numero }}º · S{{ semestre }}
+        </span>
+        <span class="text-[11px] text-dim">
+            {{ asignaturas|length }} asignatura{{ asignaturas|length|pluralize }}
+        </span>
+    </div>
+    {% endif %}
+</form>
+
+<!-- ─────────────────────────────────────────────
+     TIMETABLE LUNES → VIERNES
+───────────────────────────────────────────── -->
+{% if titulacion_sel and curso_sel %}
+
+<div class="bg-surface border border-stroke rounded-xl overflow-hidden
+            shadow-[0_4px_24px_rgba(0,0,0,0.5)] mb-6">
+
+    <!-- Cabecera días -->
+    <div class="grid grid-cols-5 border-b border-stroke bg-raised">
+        {% for dia in dias %}
+        <div class="px-3 py-3 text-center border-r border-stroke last:border-r-0">
+            <p class="text-[11px] font-black uppercase tracking-widest text-dim">{{ dia }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Cuerpo del timetable -->
+    <div class="grid grid-cols-5 min-h-[12rem]">
+
+        <!-- Lunes -->
+        <div class="border-r border-stroke p-2.5 flex flex-col gap-2">
+            {% for asig in grid.Lunes %}
+                <div class="relative group rounded-lg border p-2.5 flex flex-col gap-1 transition-all
+                            {% if asig.es_compartida %}bg-burg/10 border-burg/30{% else %}bg-raised border-stroke{% endif %}
+                            hover:border-burg/50">
+                    <span class="text-[10px] font-bold text-dim uppercase tracking-wide">{{ asig.codigo }}</span>
+                    <span class="text-xs font-semibold text-ink leading-tight">{{ asig.nombre }}</span>
+                    <div class="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'academic:editar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-raised border border-stroke
+                                  text-[10px] font-semibold text-dim hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">edit</span>Edit
+                        </a>
+                        <a href="{% url 'academic:eliminar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-burg/10
+                                  border border-burg/20 text-[10px] font-semibold text-burg-light
+                                  hover:bg-burg/20 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">delete</span>Del
+                        </a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="flex-1 flex items-center justify-center">
+                    <span class="text-xs text-dim opacity-30">—</span>
+                </div>
+            {% endfor %}
         </div>
 
-        <!-- Tabla de asignaturas -->
-        {% if curso.asignaturas.all %}
-        <div class="table-wrap" style="padding-left:.5rem;">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width:110px;">Código</th>
-                        <th>Asignatura</th>
-                        <th style="text-align:center; width:120px;">Sesiones/sem</th>
-                        <th style="text-align:center; width:100px;">Horas/ses</th>
-                        <th style="text-align:center; width:110px;">Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asig in curso.asignaturas.all %}
-                    <tr>
-                        <td>
-                            <span class="badge badge-muted"
-                                  style="font-family:monospace; font-size:.73rem;">
-                                {{ asig.codigo }}
-                            </span>
-                        </td>
-                        <td style="font-weight:500;">{{ asig.nombre }}</td>
-                        <td style="text-align:center; color:var(--muted);">
-                            {{ asig.sesiones_semana }}
-                        </td>
-                        <td style="text-align:center; color:var(--muted);">
-                            {{ asig.horas_sesion }}h
-                        </td>
-                        <td style="text-align:center;">
-                            {% if asig.es_compartida %}
-                                <span class="badge badge-green">Compartida</span>
-                            {% else %}
-                                <span class="badge badge-muted">Única</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Martes -->
+        <div class="border-r border-stroke p-2.5 flex flex-col gap-2">
+            {% for asig in grid.Martes %}
+                <div class="relative group rounded-lg border p-2.5 flex flex-col gap-1 transition-all
+                            {% if asig.es_compartida %}bg-burg/10 border-burg/30{% else %}bg-raised border-stroke{% endif %}
+                            hover:border-burg/50">
+                    <span class="text-[10px] font-bold text-dim uppercase tracking-wide">{{ asig.codigo }}</span>
+                    <span class="text-xs font-semibold text-ink leading-tight">{{ asig.nombre }}</span>
+                    <div class="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'academic:editar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-raised border border-stroke
+                                  text-[10px] font-semibold text-dim hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">edit</span>Edit
+                        </a>
+                        <a href="{% url 'academic:eliminar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-burg/10
+                                  border border-burg/20 text-[10px] font-semibold text-burg-light
+                                  hover:bg-burg/20 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">delete</span>Del
+                        </a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="flex-1 flex items-center justify-center">
+                    <span class="text-xs text-dim opacity-30">—</span>
+                </div>
+            {% endfor %}
         </div>
-        {% else %}
-        <p style="color:var(--muted); font-size:.85rem; padding:.5rem .75rem;
-                  font-style:italic;">
-            Sin asignaturas registradas en este curso.
-        </p>
-        {% endif %}
+
+        <!-- Miércoles -->
+        <div class="border-r border-stroke p-2.5 flex flex-col gap-2">
+            {% for asig in grid.Miércoles %}
+                <div class="relative group rounded-lg border p-2.5 flex flex-col gap-1 transition-all
+                            {% if asig.es_compartida %}bg-burg/10 border-burg/30{% else %}bg-raised border-stroke{% endif %}
+                            hover:border-burg/50">
+                    <span class="text-[10px] font-bold text-dim uppercase tracking-wide">{{ asig.codigo }}</span>
+                    <span class="text-xs font-semibold text-ink leading-tight">{{ asig.nombre }}</span>
+                    <div class="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'academic:editar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-raised border border-stroke
+                                  text-[10px] font-semibold text-dim hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">edit</span>Edit
+                        </a>
+                        <a href="{% url 'academic:eliminar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-burg/10
+                                  border border-burg/20 text-[10px] font-semibold text-burg-light
+                                  hover:bg-burg/20 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">delete</span>Del
+                        </a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="flex-1 flex items-center justify-center">
+                    <span class="text-xs text-dim opacity-30">—</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Jueves -->
+        <div class="border-r border-stroke p-2.5 flex flex-col gap-2">
+            {% for asig in grid.Jueves %}
+                <div class="relative group rounded-lg border p-2.5 flex flex-col gap-1 transition-all
+                            {% if asig.es_compartida %}bg-burg/10 border-burg/30{% else %}bg-raised border-stroke{% endif %}
+                            hover:border-burg/50">
+                    <span class="text-[10px] font-bold text-dim uppercase tracking-wide">{{ asig.codigo }}</span>
+                    <span class="text-xs font-semibold text-ink leading-tight">{{ asig.nombre }}</span>
+                    <div class="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'academic:editar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-raised border border-stroke
+                                  text-[10px] font-semibold text-dim hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">edit</span>Edit
+                        </a>
+                        <a href="{% url 'academic:eliminar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-burg/10
+                                  border border-burg/20 text-[10px] font-semibold text-burg-light
+                                  hover:bg-burg/20 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">delete</span>Del
+                        </a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="flex-1 flex items-center justify-center">
+                    <span class="text-xs text-dim opacity-30">—</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Viernes -->
+        <div class="p-2.5 flex flex-col gap-2">
+            {% for asig in grid.Viernes %}
+                <div class="relative group rounded-lg border p-2.5 flex flex-col gap-1 transition-all
+                            {% if asig.es_compartida %}bg-burg/10 border-burg/30{% else %}bg-raised border-stroke{% endif %}
+                            hover:border-burg/50">
+                    <span class="text-[10px] font-bold text-dim uppercase tracking-wide">{{ asig.codigo }}</span>
+                    <span class="text-xs font-semibold text-ink leading-tight">{{ asig.nombre }}</span>
+                    <div class="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a href="{% url 'academic:editar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-raised border border-stroke
+                                  text-[10px] font-semibold text-dim hover:text-ink transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">edit</span>Edit
+                        </a>
+                        <a href="{% url 'academic:eliminar_asignatura' asig.pk %}"
+                           class="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-burg/10
+                                  border border-burg/20 text-[10px] font-semibold text-burg-light
+                                  hover:bg-burg/20 transition-colors">
+                            <span class="material-symbols-outlined" style="font-size:11px;">delete</span>Del
+                        </a>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="flex-1 flex items-center justify-center">
+                    <span class="text-xs text-dim opacity-30">—</span>
+                </div>
+            {% endfor %}
+        </div>
 
     </div>
-    {% empty %}
-    <p style="color:var(--muted); font-size:.9rem; font-style:italic;">
-        Esta titulación no tiene cursos configurados.
-    </p>
+
+    <!-- Leyenda -->
+    <div class="border-t border-stroke px-5 py-3 flex items-center gap-5">
+        <span class="flex items-center gap-1.5 text-[11px] text-dim">
+            <span class="w-2.5 h-2.5 rounded-sm bg-burg/20 border border-burg/30 inline-block"></span>
+            Compartida
+        </span>
+        <span class="flex items-center gap-1.5 text-[11px] text-dim">
+            <span class="w-2.5 h-2.5 rounded-sm bg-raised border border-stroke inline-block"></span>
+            Obligatoria
+        </span>
+        <span class="text-[11px] text-dim ml-auto opacity-40 italic">
+            Distribución tentativa · el generador asignará los slots definitivos
+        </span>
+    </div>
+</div>
+
+<!-- ─────────────────────────────────────────────
+     TABLA LISTA (acciones editar/eliminar)
+───────────────────────────────────────────── -->
+{% if asignaturas %}
+<div class="bg-surface border border-stroke rounded-xl overflow-hidden
+            shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+
+    <div class="flex items-center justify-between px-6 py-4 border-b border-stroke">
+        <h3 class="text-sm font-semibold text-ink flex items-center gap-2">
+            <span class="material-symbols-outlined text-burg-light" style="font-size:18px;">list</span>
+            Lista de asignaturas
+        </h3>
+        <span class="text-xs text-dim">{{ asignaturas|length }} en S{{ semestre }}</span>
+    </div>
+
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-raised">
+                <th class="text-left px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim">Código</th>
+                <th class="text-left px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim">Nombre</th>
+                <th class="text-center px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim hidden lg:table-cell">Sesiones</th>
+                <th class="text-center px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim hidden lg:table-cell">Tipo</th>
+                <th class="text-right px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-stroke">
+            {% for asig in asignaturas %}
+            <tr class="hover:bg-raised transition-colors">
+                <td class="px-6 py-3.5">
+                    <span class="bg-burg/20 text-burg-light text-xs font-bold
+                                 px-2 py-1 rounded-md border border-burg/20">
+                        {{ asig.codigo }}
+                    </span>
+                </td>
+                <td class="px-6 py-3.5 font-medium text-ink">{{ asig.nombre }}</td>
+                <td class="px-6 py-3.5 text-center text-dim text-xs hidden lg:table-cell">
+                    {{ asig.sesiones_semana }}× {{ asig.horas_sesion }}h
+                </td>
+                <td class="px-6 py-3.5 text-center hidden lg:table-cell">
+                    {% if asig.es_compartida %}
+                    <span class="bg-burg/10 text-burg-light text-[10px] font-bold
+                                 px-2 py-0.5 rounded-full border border-burg/20 uppercase">
+                        Compartida
+                    </span>
+                    {% else %}
+                    <span class="bg-raised text-dim text-[10px] font-bold
+                                 px-2 py-0.5 rounded-full uppercase">
+                        Obligatoria
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="px-6 py-3.5">
+                    <div class="flex items-center justify-end gap-2">
+                        <a href="{% url 'academic:editar_asignatura' asig.pk %}"
+                           class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg
+                                  bg-raised border border-stroke text-dim text-xs font-semibold
+                                  hover:border-burg/50 hover:text-ink transition-all">
+                            <span class="material-symbols-outlined" style="font-size:13px;">edit</span>
+                            Editar
+                        </a>
+                        <a href="{% url 'academic:eliminar_asignatura' asig.pk %}"
+                           class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg
+                                  bg-burg/10 border border-burg/20 text-burg-light text-xs font-semibold
+                                  hover:bg-burg/20 transition-all">
+                            <span class="material-symbols-outlined" style="font-size:13px;">delete</span>
+                            Eliminar
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<div class="bg-surface/60 rounded-xl border border-dashed border-stroke
+            p-10 flex flex-col items-center text-center gap-3">
+    <span class="material-symbols-outlined text-4xl text-stroke">menu_book</span>
+    <p class="text-sm font-medium text-dim">Sin asignaturas en este semestre.</p>
+    <a href="/admin/academic/asignatura/add/"
+       class="text-xs text-burg-light font-semibold hover:underline">
+        Añadir asignatura →
+    </a>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Sin titulaciones -->
+<div class="bg-surface rounded-xl border border-dashed border-stroke p-16
+            flex flex-col items-center text-center">
+    <span class="material-symbols-outlined text-6xl text-stroke mb-4">school</span>
+    <h3 class="text-xl font-bold text-dim mb-2">Sin titulaciones activas</h3>
+    <a href="/admin/academic/titulacion/add/"
+       class="px-5 py-2.5 bg-burg text-ink text-sm font-bold rounded-lg
+              hover:bg-burg-light transition-colors mt-4">
+        Crear titulación →
+    </a>
+</div>
+{% endif %}
+
+<!-- Mensajes flash -->
+{% if messages %}
+<div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
+    {% for msg in messages %}
+    <div class="flex items-center gap-3 bg-surface border border-burg/30
+                rounded-xl px-5 py-3 shadow-lg text-sm font-medium text-ink">
+        <span class="material-symbols-outlined text-burg-light" style="font-size:18px;">check_circle</span>
+        {{ msg }}
+    </div>
     {% endfor %}
-
 </div>
-{% empty %}
-<div class="card" style="text-align:center; padding:3rem 1.5rem;">
-    <div style="font-size:2.5rem; margin-bottom:.75rem;">🎓</div>
-    <h2 style="color:var(--navy); margin-bottom:.5rem;">Sin titulaciones</h2>
-    <p style="color:var(--muted); margin-bottom:1.5rem;">
-        Aún no hay titulaciones activas en el sistema.
-    </p>
-    <a href="/admin/academic/titulacion/add/" class="btn btn-primary">
-        Crear primera titulación →
-    </a>
-</div>
-{% endfor %}
+{% endif %}
 
 {% endblock %}

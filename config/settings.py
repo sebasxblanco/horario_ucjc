@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'debug_toolbar',
+    'django_tailwind_cli',
     'accounts',
     'academic',
     'scheduler',
@@ -74,6 +75,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# ── django-tailwind-cli ────────────────────────────────────────────────────
+# Fijamos Tailwind v3.4.13 (compatible con tailwind.config.js + @tailwind directives)
+TAILWIND_CLI_VERSION     = '3.4.13'
+TAILWIND_CLI_CONFIG_FILE = BASE_DIR / 'tailwind.config.js'
+TAILWIND_CLI_SRC_CSS     = BASE_DIR / 'static' / 'css' / 'tailwind.css'
+TAILWIND_CLI_DIST_CSS    = BASE_DIR / 'static' / 'css' / 'styles.css'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

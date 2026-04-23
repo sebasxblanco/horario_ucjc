@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión cerrada — Horarios UCJC</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+</head>
+<body class="bg-bg text-ink antialiased min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-sm text-center flex flex-col items-center gap-6">
+
+    <div class="w-16 h-16 rounded-2xl bg-burg flex items-center justify-center
+                text-ink font-black text-xl tracking-tight shadow-lg ring-1 ring-white/10">
+        UC
+    </div>
+
+    <div>
+        <h1 class="text-xl font-bold text-ink mb-2">Sesión cerrada</h1>
+        <p class="text-sm text-dim">
+            Has salido correctamente del sistema de horarios UCJC.
+        </p>
+    </div>
+
+    <a href="/accounts/login/"
+       class="flex items-center gap-2 bg-burg hover:bg-burg-light text-ink
+              font-bold text-sm px-6 py-2.5 rounded-lg transition-colors
+              shadow-lg ring-1 ring-white/5 active:scale-[0.98]">
+        <span class="material-symbols-outlined" style="font-size:18px;">login</span>
+        Volver a entrar
+    </a>
+
+</div>
+
+</body>
+</html>
