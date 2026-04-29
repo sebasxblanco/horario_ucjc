@@ -7,6 +7,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('timetable.urls')),
     path('academic/', include('academic.urls')),
+    path('scheduler/', include('scheduler.urls')),
 ]
 
 if settings.DEBUG:

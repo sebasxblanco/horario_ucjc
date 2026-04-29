@@ -1,0 +1,15 @@
+<div class="rounded-lg border p-2 text-left w-full
+            {% if sesion.asignatura.es_compartida %}bg-burg/10 border-burg/30{% else %}bg-raised border-stroke{% endif %}">
+    <p class="text-[9px] font-bold text-dim uppercase tracking-wide leading-tight">
+        {{ sesion.asignatura.codigo }}
+    </p>
+    <p class="text-[11px] font-semibold text-ink leading-tight mt-0.5">
+        {{ sesion.asignatura.nombre }}
+    </p>
+    {% if sesion.aula %}
+    <p class="text-[9px] text-dim mt-0.5">Aula {{ sesion.aula }}</p>
+    {% endif %}
+    {% if sesion.asignatura.es_compartida %}
+    <span class="text-[8px] font-bold text-burg-light uppercase tracking-wide">Compartida</span>
+    {% endif %}
+</div>

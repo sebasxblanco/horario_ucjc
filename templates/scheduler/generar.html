@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block titulo %}Generar Horario — Horarios UCJC{% endblock %}
+{% block top_titulo %}Generador de Horarios{% endblock %}
+
+{% block contenido %}
+<div class="max-w-2xl mx-auto">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-xs text-dim mb-6">
+        <a href="{% url 'scheduler:lista' %}" class="hover:text-ink transition-colors">Horarios</a>
+        <span class="material-symbols-outlined opacity-40" style="font-size:14px;">chevron_right</span>
+        <span class="text-ink font-medium">Generar nuevo</span>
+    </div>
+
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold tracking-tight text-ink mb-1">Generador de Horarios</h2>
+        <p class="text-sm text-dim">El algoritmo asigna slots Lunes–Viernes sin solapamientos, respetando todas las restricciones del SRS.</p>
+    </div>
+
+    <!-- Mensajes -->
+    {% if messages %}
+    <div class="flex flex-col gap-2 mb-5">
+        {% for msg in messages %}
+        <div class="flex items-start gap-3 rounded-lg px-4 py-3 border
+                    {% if msg.tags == 'error' %}bg-burg/10 border-burg/30 text-burg-light
+                    {% elif msg.tags == 'warning' %}bg-yellow-900/20 border-yellow-700/30 text-yellow-400
+                    {% else %}bg-burg/5 border-burg/20 text-ink{% endif %}">
+            <span class="material-symbols-outlined flex-shrink-0" style="font-size:17px;">
+                {% if msg.tags == 'error' %}error{% elif msg.tags == 'warning' %}warning{% else %}check_circle{% endif %}
+            </span>
+            <p class="text-sm">{{ msg }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Formulario -->
+    <div class="bg-surface border border-stroke rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.5)] overflow-hidden">
+
+        <div class="px-8 pt-7 pb-5 border-b border-stroke flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-burg/20 border border-burg/30 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-burg-light" style="font-size:20px;">auto_awesome_motion</span>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-ink">Parámetros de generación</h3>
+                <p class="text-xs text-dim mt-0.5">Selecciona la titulación, curso y semestre para generar el horario.</p>
+            </div>
+        </div>
+
+        <form method="post" class="px-8 py-7 flex flex-col gap-5" id="gen-form">
+            {% csrf_token %}
+
+            <!-- Titulación -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-dim uppercase tracking-wider">Titulación</label>
+                <div class="flex flex-wrap gap-2" id="tit-selector">
+                    {% for t in titulaciones %}
+                    <button type="button" data-codigo="{{ t.codigo }}"
+                            data-cursos="{{ cursos_por_tit|default:'{}' }}"
+                            onclick="seleccionarTit('{{ t.codigo }}')"
+                            class="tit-btn px-4 py-2 rounded-lg text-sm font-bold border transition-colors
+                                   bg-raised text-dim border-stroke hover:border-burg/50 hover:text-ink">
+                        <span class="font-black">{{ t.codigo }}</span>
+                        <span class="text-[11px] opacity-60 ml-1">{{ t.nombre }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="titulacion" id="titulacion-input" required>
+            </div>
+
+            <!-- Curso -->
+            <div class="flex flex-col gap-1.5" id="curso-section" style="display:none!important">
+                <label class="text-xs font-semibold text-dim uppercase tracking-wider">Curso</label>
+                <div class="flex gap-2" id="curso-selector"></div>
+                <input type="hidden" name="curso" id="curso-input" required>
+            </div>
+
+            <!-- Semestre -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-dim uppercase tracking-wider">Semestre</label>
+                <div class="flex rounded-lg border border-stroke overflow-hidden w-fit">
+                    <button type="button" onclick="seleccionarSem(1)"
+                            class="sem-btn px-5 py-2 text-sm font-bold transition-colors bg-burg text-ink"
+                            data-sem="1">Semestre 1</button>
+                    <button type="button" onclick="seleccionarSem(2)"
+                            class="sem-btn px-5 py-2 text-sm font-bold border-l border-stroke transition-colors bg-raised text-dim"
+                            data-sem="2">Semestre 2</button>
+                </div>
+                <input type="hidden" name="semestre" id="semestre-input" value="1">
+            </div>
+
+            <!-- Año académico -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-dim uppercase tracking-wider">Año académico</label>
+                <input type="text" name="anio_academico" value="2024-25"
+                       class="w-40 bg-raised border border-stroke rounded-lg px-4 py-2.5 text-sm text-ink
+                              focus:outline-none focus:border-burg focus:ring-1 focus:ring-burg transition-colors">
+            </div>
+
+            <!-- Aviso regeneración -->
+            <div class="flex items-start gap-3 bg-raised rounded-lg border border-stroke px-4 py-3">
+                <span class="material-symbols-outlined text-dim flex-shrink-0" style="font-size:17px;">info</span>
+                <p class="text-xs text-dim leading-relaxed">
+                    Si ya existe un borrador para esta combinación, será reemplazado automáticamente.
+                    Los horarios <strong class="text-ink">Aprobados</strong> nunca se modifican.
+                </p>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex items-center gap-3 pt-1">
+                <button type="submit" id="btn-generar"
+                        class="flex items-center gap-2 px-6 py-2.5 rounded-lg
+                               bg-burg hover:bg-burg-light text-ink font-bold text-sm
+                               transition-colors shadow-lg disabled:opacity-40">
+                    <span class="material-symbols-outlined" style="font-size:16px;">bolt</span>
+                    Generar horario
+                </button>
+                <a href="{% url 'scheduler:lista' %}"
+                   class="px-5 py-2.5 rounded-lg bg-raised border border-stroke
+                          text-dim text-sm font-semibold hover:text-ink transition-colors">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block scripts_extra %}
+<script>
+const cursosPorTit = {{ cursos_por_tit|safe }};
+
+function seleccionarTit(codigo) {
+    document.getElementById('titulacion-input').value = codigo;
+    document.querySelectorAll('.tit-btn').forEach(b => {
+        const activo = b.dataset.codigo === codigo;
+        b.className = b.className
+            .replace(/bg-burg text-ink border-burg|bg-raised text-dim border-stroke hover:border-burg\/50 hover:text-ink/g, '');
+        b.classList.add(...(activo
+            ? ['bg-burg','text-ink','border-burg']
+            : ['bg-raised','text-dim','border-stroke','hover:border-burg/50','hover:text-ink']));
+    });
+    // Renderiza cursos
+    const cursos = cursosPorTit[codigo] || [];
+    const sel = document.getElementById('curso-selector');
+    sel.innerHTML = cursos.map(c =>
+        `<button type="button" onclick="seleccionarCurso(${c.numero})"
+            class="curso-btn px-4 py-2 rounded-lg text-sm font-bold border transition-colors
+                   bg-raised text-dim border-stroke hover:border-burg/50 hover:text-ink">
+            ${c.numero}º${c.es_ultimo ? ' <span class=\'text-[10px] opacity-60\'>tarde</span>' : ''}
+        </button>`
+    ).join('');
+    document.getElementById('curso-section').style.removeProperty('display');
+    document.getElementById('curso-input').value = '';
+}
+
+function seleccionarCurso(num) {
+    document.getElementById('curso-input').value = num;
+    document.querySelectorAll('.curso-btn').forEach(b => {
+        const activo = b.textContent.trim().startsWith(num + 'º');
+        b.className = b.className
+            .replace(/bg-burg text-ink border-burg|bg-raised text-dim border-stroke hover:border-burg\/50 hover:text-ink/g, '');
+        b.classList.add(...(activo
+            ? ['bg-burg','text-ink','border-burg']
+            : ['bg-raised','text-dim','border-stroke','hover:border-burg/50','hover:text-ink']));
+    });
+}
+
+function seleccionarSem(num) {
+    document.getElementById('semestre-input').value = num;
+    document.querySelectorAll('.sem-btn').forEach(b => {
+        const activo = parseInt(b.dataset.sem) === num;
+        b.className = b.className
+            .replace(/bg-burg text-ink|bg-raised text-dim/g, '');
+        b.classList.add(...(activo ? ['bg-burg','text-ink'] : ['bg-raised','text-dim']));
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

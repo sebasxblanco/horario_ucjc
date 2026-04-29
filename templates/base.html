@@ -66,24 +66,30 @@
             Gestor de Asignaturas
         </a>
 
-        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
-                  cursor-not-allowed select-none opacity-35">
+        {% if user.is_authenticated and user.rol in 'DECANO IT CONSULTOR' or user.is_superuser %}
+        <a href="/scheduler/generar/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  transition-all duration-150 active:scale-[0.98]
+                  {% if '/scheduler/generar' in request.path %}
+                      bg-deep text-burg-light font-semibold
+                  {% else %}
+                      text-dim hover:bg-raised hover:text-ink
+                  {% endif %}">
             <span class="material-symbols-outlined">auto_awesome_motion</span>
             Generador de Horarios
-            <span class="ml-auto text-[9px] bg-raised text-dim px-1.5 py-0.5
-                         rounded font-bold uppercase tracking-wide">
-                Próx.
-            </span>
         </a>
+        {% endif %}
 
-        <a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
-                  cursor-not-allowed select-none opacity-35">
+        <a href="/scheduler/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  transition-all duration-150 active:scale-[0.98]
+                  {% if request.path == '/scheduler/' or '/scheduler/horario' in request.path %}
+                      bg-deep text-burg-light font-semibold
+                  {% else %}
+                      text-dim hover:bg-raised hover:text-ink
+                  {% endif %}">
             <span class="material-symbols-outlined">bookmarks</span>
-            Horarios Guardados
-            <span class="ml-auto text-[9px] bg-raised text-dim px-1.5 py-0.5
-                         rounded font-bold uppercase tracking-wide">
-                Próx.
-            </span>
+            Horarios
         </a>
 
     </div>

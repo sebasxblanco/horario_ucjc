@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load scheduler_tags %}
+{% block titulo %}{{ horario }} — Horarios UCJC{% endblock %}
+{% block top_titulo %}Horarios{% endblock %}
+
+{% block contenido %}
+
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-xs text-dim mb-5">
+    <a href="{% url 'scheduler:lista' %}" class="hover:text-ink transition-colors">Horarios</a>
+    <span class="material-symbols-outlined opacity-40" style="font-size:14px;">chevron_right</span>
+    <span class="text-ink font-medium">{{ horario.titulacion.codigo }} · {{ horario.curso.numero }}º · S{{ horario.semestre }}</span>
+</div>
+
+<!-- Cabecera -->
+<div class="flex justify-between items-start flex-wrap gap-4 mb-5">
+    <div>
+        <div class="flex items-center gap-3 mb-1 flex-wrap">
+            <h2 class="text-2xl font-bold text-ink">
+                {{ horario.titulacion.nombre }} — {{ horario.curso.numero }}º curso
+            </h2>
+            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border
+                {% if horario.estado == 'APROBADO' %}bg-green-900/20 text-green-400 border-green-700/30
+                {% elif horario.estado == 'REVISION' %}bg-yellow-900/20 text-yellow-400 border-yellow-700/30
+                {% elif horario.estado == 'RECHAZADO' %}bg-burg/10 text-burg-light border-burg/20
+                {% else %}bg-raised text-dim border-stroke{% endif %}">
+                {{ horario.get_estado_display }}
+            </span>
+        </div>
+        <p class="text-sm text-dim">
+            Semestre {{ horario.semestre }} &middot; {{ horario.anio_academico }} &middot;
+            Generado por <span class="text-ink font-medium">{{ horario.generado_por.username|default:"sistema" }}</span>
+        </p>
+    </div>
+
+    {% if es_admin %}
+    <div class="flex flex-wrap gap-2">
+        {% if horario.es_editable %}
+        <a href="{% url 'scheduler:generar' %}"
+           class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-raised border border-stroke
+                  text-dim text-xs font-semibold hover:text-ink transition-all">
+            <span class="material-symbols-outlined" style="font-size:14px;">refresh</span>
+            Regenerar
+        </a>
+        {% endif %}
+
+        {% if horario.estado == 'BORRADOR' %}
+        <form method="post" action="{% url 'scheduler:cambiar_estado' horario.pk %}">
+            {% csrf_token %}<input type="hidden" name="estado" value="REVISION">
+            <button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-raised border border-stroke
+                           text-dim text-xs font-semibold hover:text-ink transition-all">
+                <span class="material-symbols-outlined" style="font-size:14px;">rate_review</span>
+                Enviar a revisión
+            </button>
+        </form>
+        {% elif horario.estado == 'REVISION' %}
+        <form method="post" action="{% url 'scheduler:cambiar_estado' horario.pk %}" class="inline">
+            {% csrf_token %}<input type="hidden" name="estado" value="APROBADO">
+            <button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-burg text-ink
+                           text-xs font-bold hover:bg-burg-light transition-all">
+                <span class="material-symbols-outlined" style="font-size:14px;">check_circle</span>
+                Aprobar
+            </button>
+        </form>
+        <form method="post" action="{% url 'scheduler:cambiar_estado' horario.pk %}" class="inline">
+            {% csrf_token %}<input type="hidden" name="estado" value="RECHAZADO">
+            <button class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-burg/10 border border-burg/20
+                           text-burg-light text-xs font-semibold hover:bg-burg/20 transition-all">
+                <span class="material-symbols-outlined" style="font-size:14px;">cancel</span>
+                Rechazar
+            </button>
+        </form>
+        {% endif %}
+
+        {% if horario.es_editable %}
+        <form method="post" action="{% url 'scheduler:eliminar' horario.pk %}">
+            {% csrf_token %}
+            <button onclick="return confirm('¿Eliminar este borrador?')"
+                    class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-burg/10 border border-burg/20
+                           text-burg-light text-xs font-semibold hover:bg-burg/20 transition-all">
+                <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
+                Eliminar
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Conflictos (solo admin) -->
+{% if conflictos %}
+<div class="bg-burg/10 border border-burg/30 rounded-xl px-5 py-4 mb-5">
+    <p class="text-sm font-bold text-burg-light mb-2 flex items-center gap-2">
+        <span class="material-symbols-outlined" style="font-size:16px;">warning</span>
+        {{ conflictos|length }} conflicto{{ conflictos|length|pluralize }} detectado{{ conflictos|length|pluralize }}
+    </p>
+    {% for c in conflictos %}<p class="text-xs text-burg-light opacity-80">· {{ c }}</p>{% endfor %}
+</div>
+{% endif %}
+
+{% if messages %}
+<div class="flex flex-col gap-2 mb-5">
+    {% for msg in messages %}
+    <div class="flex items-center gap-3 bg-surface border border-burg/30 rounded-xl px-5 py-3 text-sm font-medium text-ink">
+        <span class="material-symbols-outlined text-burg-light" style="font-size:18px;">check_circle</span>{{ msg }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ─── TIMETABLE GRID ─────────────────────────────────────────── -->
+<div class="bg-surface border border-stroke rounded-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.5)] overflow-x-auto">
+    <table class="w-full min-w-[640px] text-sm border-collapse">
+
+        <!-- Cabecera días -->
+        <thead>
+            <tr class="bg-raised border-b border-stroke">
+                <th class="w-24 px-3 py-3 border-r border-stroke text-[10px] font-black uppercase tracking-widest text-dim text-left">Bloque</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Lunes</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Martes</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Miércoles</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Jueves</th>
+                <th class="px-3 py-3 text-[11px] font-black uppercase tracking-widest text-dim text-center">Viernes</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for bloque in bloques %}
+        {% with fila_lun=grid|get_item:1 fila_mar=grid|get_item:2 fila_mie=grid|get_item:3 fila_jue=grid|get_item:4 fila_vie=grid|get_item:5 %}
+        <tr class="border-b border-stroke last:border-b-0">
+
+            <!-- Bloque label -->
+            <td class="px-3 py-3 border-r border-stroke bg-raised/40 align-top">
+                <p class="text-[10px] font-bold text-ink leading-tight">{{ bloque.nombre }}</p>
+                <p class="text-[10px] text-dim">{{ bloque.hora_inicio|date:"H:i" }}–{{ bloque.hora_fin|date:"H:i" }}</p>
+                <span class="text-[9px] font-bold uppercase mt-0.5 inline-block
+                             {% if bloque.turno == 'MANANA' %}text-yellow-500{% else %}text-burg-light{% endif %}">
+                    {{ bloque.get_turno_display }}
+                </span>
+            </td>
+
+            <!-- Lunes -->
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_lun|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <!-- Martes -->
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_mar|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <!-- Miércoles -->
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_mie|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <!-- Jueves -->
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_jue|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <!-- Viernes -->
+            <td class="px-2 py-2 align-top min-w-[8rem]">
+                {% with s=fila_vie|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+
+        </tr>
+        {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Leyenda -->
+<div class="flex items-center gap-5 mt-3 px-1">
+    <span class="flex items-center gap-1.5 text-[11px] text-dim">
+        <span class="w-3 h-3 rounded-sm bg-burg/20 border border-burg/30 inline-block"></span>
+        Compartida (mismo slot II ↔ IR)
+    </span>
+    <span class="flex items-center gap-1.5 text-[11px] text-dim">
+        <span class="w-3 h-3 rounded-sm bg-raised border border-stroke inline-block"></span>
+        Exclusiva de la titulación
+    </span>
+</div>
+
+{% endblock %}

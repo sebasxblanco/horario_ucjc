@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block titulo %}Horarios — Horarios UCJC{% endblock %}
+{% block top_titulo %}Horarios Guardados{% endblock %}
+
+{% block contenido %}
+
+<div class="mb-6 flex justify-between items-end flex-wrap gap-3">
+    <div>
+        <h2 class="text-3xl font-bold tracking-tight text-ink mb-1">Horarios</h2>
+        <p class="text-sm text-dim">Consulta y gestiona los horarios generados.</p>
+    </div>
+    {% if es_admin %}
+    <a href="{% url 'scheduler:generar' %}"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-burg text-ink
+              text-sm font-bold hover:bg-burg-light transition-colors shadow-lg">
+        <span class="material-symbols-outlined" style="font-size:16px;">bolt</span>
+        Generar horario
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filtros -->
+<div class="flex flex-wrap gap-3 mb-5">
+    <div class="flex gap-1">
+        <a href="?{% if sem_filtro %}semestre={{ sem_filtro }}{% endif %}"
+           class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                  {% if not tit_filtro %}bg-burg text-ink border-burg{% else %}bg-raised text-dim border-stroke hover:text-ink{% endif %}">
+            Todas
+        </a>
+        {% for t in titulaciones %}
+        <a href="?titulacion={{ t.codigo }}{% if sem_filtro %}&semestre={{ sem_filtro }}{% endif %}"
+           class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors
+                  {% if tit_filtro == t.codigo %}bg-burg text-ink border-burg{% else %}bg-raised text-dim border-stroke hover:text-ink{% endif %}">
+            {{ t.codigo }}
+        </a>
+        {% endfor %}
+    </div>
+    <div class="flex rounded-lg border border-stroke overflow-hidden text-xs font-bold">
+        <a href="?{% if tit_filtro %}titulacion={{ tit_filtro }}&{% endif %}"
+           class="px-3 py-1.5 transition-colors {% if not sem_filtro %}bg-burg text-ink{% else %}bg-raised text-dim hover:text-ink{% endif %}">
+            S1+S2
+        </a>
+        <a href="?{% if tit_filtro %}titulacion={{ tit_filtro }}&{% endif %}semestre=1"
+           class="px-3 py-1.5 border-l border-stroke transition-colors {% if sem_filtro == '1' %}bg-burg text-ink{% else %}bg-raised text-dim hover:text-ink{% endif %}">
+            S1
+        </a>
+        <a href="?{% if tit_filtro %}titulacion={{ tit_filtro }}&{% endif %}semestre=2"
+           class="px-3 py-1.5 border-l border-stroke transition-colors {% if sem_filtro == '2' %}bg-burg text-ink{% else %}bg-raised text-dim hover:text-ink{% endif %}">
+            S2
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+<div class="flex flex-col gap-2 mb-5">
+    {% for msg in messages %}
+    <div class="flex items-center gap-3 bg-surface border border-burg/30 rounded-xl px-5 py-3 text-sm font-medium text-ink">
+        <span class="material-symbols-outlined text-burg-light" style="font-size:18px;">check_circle</span>
+        {{ msg }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Tabla -->
+{% if horarios %}
+<div class="bg-surface border border-stroke rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="bg-raised">
+                <th class="text-left px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim">Titulación</th>
+                <th class="text-left px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim hidden md:table-cell">Curso</th>
+                <th class="text-center px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim hidden md:table-cell">Semestre</th>
+                <th class="text-center px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim">Estado</th>
+                <th class="text-right px-6 py-3 text-[11px] font-bold uppercase tracking-widest text-dim">Acciones</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-stroke">
+            {% for h in horarios %}
+            <tr class="hover:bg-raised transition-colors">
+                <td class="px-6 py-3.5">
+                    <span class="bg-burg/20 text-burg-light text-xs font-bold px-2 py-1 rounded-md border border-burg/20">
+                        {{ h.titulacion.codigo }}
+                    </span>
+                    <span class="text-dim text-xs ml-2 hidden lg:inline">{{ h.anio_academico }}</span>
+                </td>
+                <td class="px-6 py-3.5 text-dim hidden md:table-cell">{{ h.curso.numero }}º</td>
+                <td class="px-6 py-3.5 text-center text-dim hidden md:table-cell">S{{ h.semestre }}</td>
+                <td class="px-6 py-3.5 text-center">
+                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border
+                        {% if h.estado == 'APROBADO' %}bg-green-900/20 text-green-400 border-green-700/30
+                        {% elif h.estado == 'REVISION' %}bg-yellow-900/20 text-yellow-400 border-yellow-700/30
+                        {% elif h.estado == 'RECHAZADO' %}bg-burg/10 text-burg-light border-burg/20
+                        {% else %}bg-raised text-dim border-stroke{% endif %}">
+                        {{ h.get_estado_display }}
+                    </span>
+                </td>
+                <td class="px-6 py-3.5 text-right">
+                    <a href="{% url 'scheduler:detalle' h.pk %}"
+                       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-raised border border-stroke
+                              text-dim text-xs font-semibold hover:border-burg/50 hover:text-ink transition-all">
+                        <span class="material-symbols-outlined" style="font-size:13px;">visibility</span>
+                        Ver
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% else %}
+<div class="bg-surface/60 rounded-xl border border-dashed border-stroke p-16 flex flex-col items-center text-center gap-4">
+    <span class="material-symbols-outlined text-5xl text-stroke">auto_awesome_motion</span>
+    <p class="text-sm text-dim">No hay horarios generados aún.</p>
+    {% if es_admin %}
+    <a href="{% url 'scheduler:generar' %}"
+       class="px-5 py-2.5 bg-burg text-ink text-sm font-bold rounded-lg hover:bg-burg-light transition-colors">
+        Generar el primero →
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
