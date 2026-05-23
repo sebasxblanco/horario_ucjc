@@ -68,6 +68,11 @@ class Asignatura(models.Model):
         verbose_name='¿Compartida entre titulaciones?',
         help_text='RD-10: obliga a bloquear el mismo slot en todas las titulaciones vinculadas'
     )
+    matriculados    = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Alumnos matriculados',
+        help_text='Foro de grado: si es inferior al umbral configurado, la asignatura se trata como exclusiva aunque esté marcada como compartida'
+    )
 
     class Meta:
         verbose_name = 'Asignatura'

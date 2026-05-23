@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Acceso denegado — Horarios UCJC{% endblock %}
+{% block contenido %}
+<div class="flex flex-col items-center justify-center h-full text-center gap-4 py-20">
+    <span class="material-symbols-outlined text-6xl text-stroke">lock</span>
+    <h2 class="text-2xl font-bold text-ink">Acceso restringido</h2>
+    <p class="text-sm text-dim max-w-sm">Esta sección es solo para profesores y administradores.</p>
+    <a href="/" class="px-5 py-2.5 bg-burg text-ink text-sm font-bold rounded-lg hover:bg-burg-light transition-colors mt-2">
+        Volver al inicio
+    </a>
+</div>
+{% endblock %}

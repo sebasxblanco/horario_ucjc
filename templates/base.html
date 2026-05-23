@@ -42,59 +42,68 @@
     <!-- Nav principal -->
     <div class="flex flex-col gap-1 flex-1">
 
+        {% if not user.rol == 'ESTUDIANTE' or user.is_superuser %}
+        {# Dashboard — oculto para alumnos #}
         <a href="/"
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
                   transition-all duration-150 active:scale-[0.98]
-                  {% if request.path == '/' %}
-                      bg-deep text-burg-light font-semibold
-                  {% else %}
-                      text-dim hover:bg-raised hover:text-ink
-                  {% endif %}">
+                  {% if request.path == '/' %}bg-deep text-burg-light font-semibold
+                  {% else %}text-dim hover:bg-raised hover:text-ink{% endif %}">
             <span class="material-symbols-outlined">dashboard</span>
             Dashboard
         </a>
+        {% endif %}
 
+        {% if not user.rol == 'ESTUDIANTE' or user.is_superuser %}
+        {# Gestor de Asignaturas — oculto para alumnos #}
         <a href="/academic/titulaciones/"
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
                   transition-all duration-150 active:scale-[0.98]
-                  {% if '/academic/titulaciones' in request.path %}
-                      bg-deep text-burg-light font-semibold
-                  {% else %}
-                      text-dim hover:bg-raised hover:text-ink
-                  {% endif %}">
+                  {% if '/academic/titulaciones' in request.path %}bg-deep text-burg-light font-semibold
+                  {% else %}text-dim hover:bg-raised hover:text-ink{% endif %}">
             <span class="material-symbols-outlined">menu_book</span>
             Gestor de Asignaturas
         </a>
+        {% endif %}
 
-        {% if user.is_authenticated and user.rol in 'DECANO IT CONSULTOR' or user.is_superuser %}
+        {% if user.is_superuser or user.rol in 'DECANO IT CONSULTOR' %}
+        {# Generador de Horarios — solo DECANO / IT / CONSULTOR / superuser #}
         <a href="/scheduler/generar/"
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
                   transition-all duration-150 active:scale-[0.98]
-                  {% if '/scheduler/generar' in request.path %}
-                      bg-deep text-burg-light font-semibold
-                  {% else %}
-                      text-dim hover:bg-raised hover:text-ink
-                  {% endif %}">
+                  {% if '/scheduler/generar' in request.path %}bg-deep text-burg-light font-semibold
+                  {% else %}text-dim hover:bg-raised hover:text-ink{% endif %}">
             <span class="material-symbols-outlined">auto_awesome_motion</span>
             Generador de Horarios
         </a>
         {% endif %}
 
+        {# Horarios — visible para TODOS (alumnos solo ven aprobados) #}
         <a href="/scheduler/"
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
                   transition-all duration-150 active:scale-[0.98]
-                  {% if request.path == '/scheduler/' or '/scheduler/horario' in request.path %}
-                      bg-deep text-burg-light font-semibold
-                  {% else %}
-                      text-dim hover:bg-raised hover:text-ink
-                  {% endif %}">
+                  {% if request.path == '/scheduler/' or '/scheduler/horario' in request.path %}bg-deep text-burg-light font-semibold
+                  {% else %}text-dim hover:bg-raised hover:text-ink{% endif %}">
             <span class="material-symbols-outlined">bookmarks</span>
             Horarios
         </a>
 
+        {% if user.is_superuser or user.rol in 'DECANO PROFESOR IT CONSULTOR' %}
+        {# Limitaciones — solo PROFESOR / DECANO / IT / CONSULTOR / superuser #}
+        <a href="/limitaciones/"
+           class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+                  transition-all duration-150 active:scale-[0.98]
+                  {% if '/limitaciones' in request.path %}bg-deep text-burg-light font-semibold
+                  {% else %}text-dim hover:bg-raised hover:text-ink{% endif %}">
+            <span class="material-symbols-outlined">report_problem</span>
+            Limitaciones
+        </a>
+        {% endif %}
+
     </div>
 
-    <!-- CTA -->
+    <!-- CTA nueva asignatura — solo para no-alumnos -->
+    {% if user.is_superuser or not user.rol == 'ESTUDIANTE' %}
     <div class="mb-4 px-2">
         <a href="/admin/academic/asignatura/add/"
            class="flex items-center justify-center gap-2 w-full bg-burg text-ink
@@ -104,6 +113,7 @@
             Nueva Asignatura
         </a>
     </div>
+    {% endif %}
 
     <!-- Footer -->
     <div class="flex flex-col gap-1 pt-4 border-t border-stroke">

@@ -97,6 +97,29 @@
                               focus:outline-none focus:border-burg focus:ring-1 focus:ring-burg transition-colors">
             </div>
 
+            <!-- Foro de grado -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-semibold text-dim uppercase tracking-wider">
+                    Umbral foro de grado
+                    <span class="normal-case font-normal ml-1 text-dim/60">(alumnos mínimos para mantener asignatura compartida)</span>
+                </label>
+                <div class="flex items-center gap-3">
+                    <input type="number" name="umbral_foro" id="umbral-foro" value="0" min="0"
+                           class="w-28 bg-raised border border-stroke rounded-lg px-4 py-2.5 text-sm text-ink
+                                  focus:outline-none focus:border-burg focus:ring-1 focus:ring-burg transition-colors">
+                    <p class="text-xs text-dim leading-relaxed">
+                        Asignaturas con <strong class="text-ink">menos alumnos</strong> que este umbral se tratarán como
+                        <strong class="text-ink">exclusivas</strong> aunque estén marcadas como compartidas.
+                        Pon <strong class="text-burg-light">0</strong> para desactivar.
+                    </p>
+                </div>
+                <!-- Indicador dinámico de asignaturas afectadas -->
+                <div id="foro-hint" class="hidden text-xs text-yellow-400 flex items-center gap-1.5 mt-0.5">
+                    <span class="material-symbols-outlined" style="font-size:13px;">info</span>
+                    <span id="foro-hint-text"></span>
+                </div>
+            </div>
+
             <!-- Aviso regeneración -->
             <div class="flex items-start gap-3 bg-raised rounded-lg border border-stroke px-4 py-3">
                 <span class="material-symbols-outlined text-dim flex-shrink-0" style="font-size:17px;">info</span>
@@ -127,7 +150,7 @@
 
 {% block scripts_extra %}
 <script>
-const cursosPorTit = {{ cursos_por_tit|safe }};
+const cursosPorTit = {{ cursos_por_tit_json|safe }};
 
 function seleccionarTit(codigo) {
     document.getElementById('titulacion-input').value = codigo;
@@ -174,6 +197,29 @@ function seleccionarSem(num) {
         b.classList.add(...(activo ? ['bg-burg','text-ink'] : ['bg-raised','text-dim']));
     });
 }
+
+// Foro de grado hint
+const matriculadosPorCodigo = {{ matriculados_json|safe }};
+document.getElementById('umbral-foro').addEventListener('input', function() {
+    const umbral = parseInt(this.value) || 0;
+    const hint = document.getElementById('foro-hint');
+    const hintText = document.getElementById('foro-hint-text');
+    if (umbral > 0) {
+        const afectadas = Object.entries(matriculadosPorCodigo)
+            .filter(([_, m]) => m < umbral)
+            .map(([c, m]) => `${c} (${m})`);
+        hint.classList.remove('hidden');
+        hint.classList.add('flex');
+        if (afectadas.length > 0) {
+            hintText.textContent = `${afectadas.length} asignatura(s) pasarán a exclusiva: ${afectadas.join(', ')}`;
+        } else {
+            hintText.textContent = 'Ninguna asignatura compartida queda por debajo del umbral.';
+        }
+    } else {
+        hint.classList.add('hidden');
+        hint.classList.remove('flex');
+    }
+});
 </script>
 {% endblock %}
 {% endblock %}

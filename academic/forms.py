@@ -6,7 +6,7 @@ class AsignaturaForm(forms.ModelForm):
     class Meta:
         model = Asignatura
         fields = ['nombre', 'codigo', 'curso', 'semestre',
-                  'horas_sesion', 'sesiones_semana', 'es_compartida']
+                  'horas_sesion', 'sesiones_semana', 'es_compartida', 'matriculados']
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'w-full bg-raised border border-stroke rounded-lg px-4 py-2.5 '
@@ -45,5 +45,11 @@ class AsignaturaForm(forms.ModelForm):
             'es_compartida': forms.CheckboxInput(attrs={
                 'class': 'w-4 h-4 rounded border-stroke bg-raised text-burg '
                          'focus:ring-burg focus:ring-1',
+            }),
+            'matriculados': forms.NumberInput(attrs={
+                'class': 'w-full bg-raised border border-stroke rounded-lg px-4 py-2.5 '
+                         'text-sm text-ink focus:outline-none focus:border-burg '
+                         'focus:ring-1 focus:ring-burg transition-colors',
+                'min': 0,
             }),
         }

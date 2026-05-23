@@ -9,6 +9,14 @@
     {% if sesion.aula %}
     <p class="text-[9px] text-dim mt-0.5">Aula {{ sesion.aula }}</p>
     {% endif %}
+    {% with prof=sesion.asignatura.asignacion.profesor.user %}
+    {% if prof %}
+    <p class="text-[9px] text-dim mt-1 flex items-center gap-1 leading-tight">
+        <span class="material-symbols-outlined" style="font-size:10px;">person</span>
+        {{ prof.get_full_name|default:prof.username }}
+    </p>
+    {% endif %}
+    {% endwith %}
     {% if sesion.asignatura.es_compartida %}
     <span class="text-[8px] font-bold text-burg-light uppercase tracking-wide">Compartida</span>
     {% endif %}

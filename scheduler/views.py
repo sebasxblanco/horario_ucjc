@@ -1,10 +1,11 @@
+import json
 from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 
-from academic.models import Titulacion, Curso
+from academic.models import Titulacion, Curso, Asignatura
 from .models import HorarioGenerado, SesionHorario
 from .algorithm import generar_horario, hay_conflictos
 
@@ -38,15 +39,21 @@ def generar(request):
     titulaciones = Titulacion.objects.filter(activa=True).order_by('nombre')
 
     if request.method == 'POST':
-        tit_codigo   = request.POST.get('titulacion')
-        curso_num    = request.POST.get('curso')
-        semestre     = int(request.POST.get('semestre', 1))
+        tit_codigo   = request.POST.get('titulacion', '').strip()
+        curso_num    = request.POST.get('curso', '').strip()
+        semestre_raw = request.POST.get('semestre', '').strip()
         anio         = request.POST.get('anio_academico', '2024-25').strip()
 
-        tit    = get_object_or_404(Titulacion, codigo=tit_codigo)
-        curso  = get_object_or_404(Curso, titulacion=tit, numero=curso_num)
+        if not tit_codigo or not curso_num or not semestre_raw:
+            messages.error(request, 'Debes seleccionar titulación, curso y semestre.')
+            return redirect('scheduler:generar')
 
-        horario, conflictos = generar_horario(tit, curso, semestre, anio, request.user)
+        semestre     = int(semestre_raw)
+        umbral_foro  = int(request.POST.get('umbral_foro', 0) or 0)
+        tit    = get_object_or_404(Titulacion, codigo=tit_codigo)
+        curso  = get_object_or_404(Curso, titulacion=tit, numero=int(curso_num))
+
+        horario, conflictos = generar_horario(tit, curso, semestre, anio, request.user, umbral_foro)
 
         if conflictos:
             for c in conflictos:
@@ -59,14 +66,23 @@ def generar(request):
             messages.error(request, 'No se pudo generar el horario.')
 
     # GET — formulario
-    cursos_por_tit = {
-        t.codigo: list(t.cursos.values('numero', 'es_ultimo').order_by('numero'))
+    cursos_por_tit_json = json.dumps({
+        t.codigo: [
+            {'numero': c.numero, 'es_ultimo': c.es_ultimo}
+            for c in t.cursos.order_by('numero')
+        ]
         for t in titulaciones
-    }
+    })
+
+    matriculados_json = json.dumps({
+        codigo: mat
+        for codigo, mat in Asignatura.objects.filter(es_compartida=True).values_list('codigo', 'matriculados')
+    })
 
     return render(request, 'scheduler/generar.html', {
-        'titulaciones':   titulaciones,
-        'cursos_por_tit': cursos_por_tit,
+        'titulaciones':        titulaciones,
+        'cursos_por_tit_json': cursos_por_tit_json,
+        'matriculados_json':   matriculados_json,
     })
 
 
@@ -111,7 +127,10 @@ def detalle(request, pk):
             render(request, 'scheduler/403.html', status=403).content
         )
 
-    sesiones = horario.sesiones.select_related('asignatura', 'bloque').order_by(
+    sesiones = horario.sesiones.select_related(
+        'asignatura', 'bloque',
+        'asignatura__asignacion__profesor__user',
+    ).order_by(
         'dia', 'bloque__hora_inicio'
     )
 
@@ -175,6 +194,22 @@ def eliminar(request, pk):
             return redirect('scheduler:lista')
         messages.error(request, 'Solo se pueden eliminar borradores.')
     return redirect('scheduler:detalle', pk=pk)
+
+
+# ── Limpiar borradores (solo Decano/IT) ──────────────────────────────────
+
+@rol_requerido('DECANO', 'IT')
+def limpiar(request):
+    if request.method == 'POST':
+        scope = request.POST.get('scope', 'borradores')
+        if scope == 'todo':
+            n, _ = HorarioGenerado.objects.all().delete()
+        else:
+            n, _ = HorarioGenerado.objects.filter(
+                estado__in=[HorarioGenerado.Estado.BORRADOR, HorarioGenerado.Estado.RECHAZADO]
+            ).delete()
+        messages.success(request, f'{n} horario(s) eliminado(s).')
+    return redirect('scheduler:lista')
 
 
 # ── Helper ────────────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ DIAS = [1, 2, 3, 4, 5]   # Lunes=1 … Viernes=5
 # API PÚBLICA
 # ──────────────────────────────────────────────────────────────────
 
-def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario):
+def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario, umbral_foro=0):
     """
     Genera y persiste un HorarioGenerado en estado BORRADOR.
     Devuelve (horario, conflictos) donde conflictos es una lista de strings.
@@ -81,7 +81,10 @@ def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario):
     conflictos = []
 
     for asig in asignaturas:
-        if asig.es_compartida and asig.id in slots_compartidos:
+        # Foro de grado: si hay umbral y la asignatura no alcanza el mínimo
+        # de alumnos, se trata como exclusiva aunque esté marcada como compartida
+        cumple_foro = (umbral_foro == 0 or asig.matriculados >= umbral_foro)
+        if asig.es_compartida and cumple_foro and asig.id in slots_compartidos:
             # Reutiliza los slots de la otra titulación (RD-10)
             for dia, bloque_id in slots_compartidos[asig.id]:
                 slot = (dia, bloque_id)
@@ -131,7 +134,9 @@ def hay_conflictos(horario):
 def _get_bloques(curso_obj):
     qs = BloqueHorario.objects.filter(activo=True).order_by('hora_inicio')
     if curso_obj.es_ultimo:
-        qs = qs.filter(turno='TARDE')   # RD-04
+        qs = qs.filter(turno='TARDE')   # RD-04: último curso solo tarde
+    else:
+        qs = qs.filter(turno='MANANA')  # cursos 1-3 solo mañana
     return list(qs)
 
 

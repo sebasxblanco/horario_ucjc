@@ -8,6 +8,7 @@ urlpatterns = [
     path('', include('timetable.urls')),
     path('academic/', include('academic.urls')),
     path('scheduler/', include('scheduler.urls')),
+    path('limitaciones/', include('limitaciones.urls')),
 ]
 
 if settings.DEBUG:

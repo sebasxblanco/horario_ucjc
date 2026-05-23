@@ -10,13 +10,105 @@
         <p class="text-sm text-dim">Consulta y gestiona los horarios generados.</p>
     </div>
     {% if es_admin %}
-    <a href="{% url 'scheduler:generar' %}"
-       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-burg text-ink
-              text-sm font-bold hover:bg-burg-light transition-colors shadow-lg">
-        <span class="material-symbols-outlined" style="font-size:16px;">bolt</span>
-        Generar horario
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{% url 'scheduler:generar' %}"
+           class="flex items-center gap-2 px-4 py-2 rounded-lg bg-burg text-ink
+                  text-sm font-bold hover:bg-burg-light transition-colors shadow-lg">
+            <span class="material-symbols-outlined" style="font-size:16px;">bolt</span>
+            Generar horario
+        </a>
+
+        <!-- Limpiar — dropdown -->
+        <details class="relative" id="limpiar-menu">
+            <summary class="list-none cursor-pointer flex items-center gap-1.5 px-3 py-2 rounded-lg
+                            bg-raised border border-stroke text-dim text-xs font-semibold
+                            hover:border-burg/40 hover:text-ink transition-all">
+                <span class="material-symbols-outlined" style="font-size:14px;">delete_sweep</span>
+                Limpiar
+            </summary>
+            <div class="absolute right-0 top-9 w-56 bg-surface border border-stroke
+                        rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 overflow-hidden p-2 flex flex-col gap-1">
+                <button type="button" onclick="abrirModal('borradores')"
+                        class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg
+                               text-xs font-semibold text-dim hover:bg-raised hover:text-ink transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:14px;">delete</span>
+                    Eliminar borradores
+                </button>
+                <button type="button" onclick="abrirModal('todo')"
+                        class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg
+                               text-xs font-semibold text-burg-light hover:bg-burg/10 transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:14px;">delete_forever</span>
+                    Eliminar todos
+                </button>
+            </div>
+        </details>
+    </div>
     {% endif %}
+</div>
+
+<!-- ── Modal de doble confirmación ─────────────────────────────── -->
+<div id="modal-limpiar"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-surface border border-stroke rounded-2xl shadow-[0_16px_64px_rgba(0,0,0,0.7)]
+                w-full max-w-sm mx-4 overflow-hidden">
+
+        <!-- Cabecera -->
+        <div class="flex items-start gap-3 px-6 pt-6 pb-4">
+            <div id="modal-icon"
+                 class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined" style="font-size:20px;"></span>
+            </div>
+            <div>
+                <h3 id="modal-titulo" class="text-base font-bold text-ink leading-tight"></h3>
+                <p id="modal-desc" class="text-xs text-dim mt-1 leading-relaxed"></p>
+            </div>
+        </div>
+
+        <!-- Paso 1 -->
+        <div id="modal-paso1" class="px-6 pb-5">
+            <div class="bg-raised border border-stroke rounded-lg px-4 py-3 mb-4">
+                <p id="modal-detalle" class="text-xs text-dim leading-relaxed"></p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="cerrarModal()"
+                        class="flex-1 px-4 py-2.5 rounded-lg bg-raised border border-stroke
+                               text-sm font-semibold text-dim hover:text-ink transition-all">
+                    Cancelar
+                </button>
+                <button id="modal-btn-continuar" onclick="mostrarPaso2()"
+                        class="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all">
+                    Continuar →
+                </button>
+            </div>
+        </div>
+
+        <!-- Paso 2 (confirmación final) -->
+        <div id="modal-paso2" class="hidden px-6 pb-5">
+            <div class="bg-burg/10 border border-burg/30 rounded-lg px-4 py-3 mb-4 flex items-start gap-2">
+                <span class="material-symbols-outlined text-burg-light flex-shrink-0" style="font-size:16px;">warning</span>
+                <p class="text-xs text-burg-light leading-relaxed font-medium">
+                    Esta acción <strong>no se puede deshacer</strong>.
+                    Confirma que quieres eliminar los horarios seleccionados.
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="mostrarPaso1()"
+                        class="flex-1 px-4 py-2.5 rounded-lg bg-raised border border-stroke
+                               text-sm font-semibold text-dim hover:text-ink transition-all">
+                    ← Atrás
+                </button>
+                <form id="modal-form" method="post" action="{% url 'scheduler:limpiar' %}" class="flex-1">
+                    {% csrf_token %}
+                    <input type="hidden" id="modal-scope" name="scope" value="">
+                    <button type="submit"
+                            id="modal-btn-confirmar"
+                            class="w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-all">
+                        Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Filtros -->
@@ -122,4 +214,79 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click', function(e) {
+    const m = document.getElementById('limpiar-menu');
+    if (m && !m.contains(e.target)) m.removeAttribute('open');
+});
+
+// Modal de doble confirmación
+const MODAL_CONFIG = {
+    borradores: {
+        titulo: 'Eliminar borradores',
+        desc: 'Se eliminarán los horarios en estado Borrador y Rechazado.',
+        detalle: 'Los horarios Aprobados y En Revisión NO se verán afectados. El Gestor de Asignaturas dejará de mostrar los borradores eliminados.',
+        iconCls: 'bg-raised border border-stroke',
+        iconName: 'delete',
+        iconColor: 'text-dim',
+        btnCls: 'bg-raised border border-stroke text-ink hover:bg-deep',
+        btnConfirmCls: 'bg-raised border border-stroke text-ink hover:bg-deep',
+    },
+    todo: {
+        titulo: 'Eliminar TODOS los horarios',
+        desc: 'Se eliminarán absolutamente todos los horarios, incluidos los Aprobados.',
+        detalle: 'El Gestor de Asignaturas volverá a mostrar la distribución tentativa. Esta acción afecta a todos los cursos y titulaciones.',
+        iconCls: 'bg-burg/20 border border-burg/30',
+        iconName: 'delete_forever',
+        iconColor: 'text-burg-light',
+        btnCls: 'bg-burg text-ink hover:bg-burg-light',
+        btnConfirmCls: 'bg-burg text-ink hover:bg-burg-light',
+    },
+};
+
+function abrirModal(scope) {
+    document.getElementById('limpiar-menu').removeAttribute('open');
+    const cfg = MODAL_CONFIG[scope];
+    document.getElementById('modal-scope').value = scope;
+    document.getElementById('modal-titulo').textContent = cfg.titulo;
+    document.getElementById('modal-desc').textContent = cfg.desc;
+    document.getElementById('modal-detalle').textContent = cfg.detalle;
+
+    const icon = document.getElementById('modal-icon');
+    icon.className = `w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.iconCls}`;
+    icon.querySelector('span').textContent = cfg.iconName;
+    icon.querySelector('span').className = `material-symbols-outlined ${cfg.iconColor}`;
+
+    document.getElementById('modal-btn-continuar').className =
+        `flex-1 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${cfg.btnCls}`;
+    document.getElementById('modal-btn-confirmar').className =
+        `w-full px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${cfg.btnConfirmCls}`;
+
+    mostrarPaso1();
+    document.getElementById('modal-limpiar').classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('modal-limpiar').classList.add('hidden');
+}
+
+function mostrarPaso1() {
+    document.getElementById('modal-paso1').classList.remove('hidden');
+    document.getElementById('modal-paso2').classList.add('hidden');
+}
+
+function mostrarPaso2() {
+    document.getElementById('modal-paso1').classList.add('hidden');
+    document.getElementById('modal-paso2').classList.remove('hidden');
+}
+
+// Cerrar modal al hacer click fuera del panel
+document.getElementById('modal-limpiar').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+</script>
 {% endblock %}
