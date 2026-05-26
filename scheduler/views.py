@@ -212,6 +212,64 @@ def limpiar(request):
     return redirect('scheduler:lista')
 
 
+# ── Vista: horario personal del profesor (RF-09) ──────────────────────────
+
+@login_required(login_url='/accounts/login/')
+def mi_horario(request):
+    """Muestra todas las sesiones asignadas al profesor que ha iniciado sesión."""
+    try:
+        perfil = request.user.perfil_profesor
+    except AttributeError:
+        return HttpResponseForbidden(
+            render(request, 'scheduler/403.html', status=403).content
+        )
+
+    sesiones = (
+        SesionHorario.objects
+        .filter(asignatura__asignacion__profesor=perfil)
+        .select_related(
+            'horario', 'horario__titulacion', 'horario__curso',
+            'asignatura', 'bloque',
+        )
+        .order_by('horario__anio_academico', 'horario__titulacion__codigo',
+                  'horario__curso__numero', 'dia', 'bloque__hora_inicio')
+    )
+
+    from academic.models import BloqueHorario
+    bloques = list(BloqueHorario.objects.filter(activo=True).order_by('hora_inicio'))
+
+    # Agrupa por horario para renderizar una tabla por horario
+    from collections import defaultdict
+    por_horario = defaultdict(list)
+    for s in sesiones:
+        por_horario[s.horario].append(s)
+
+    # Construye grid por horario
+    grupos = []
+    for horario, slist in por_horario.items():
+        bqs = [b for b in bloques if (horario.curso.es_ultimo and b.turno == 'TARDE')
+               or (getattr(horario.curso, 'es_hibrido', False))
+               or (not horario.curso.es_ultimo and b.turno == 'MANANA')]
+        if getattr(horario.curso, 'es_hibrido', False):
+            bqs = bloques
+        grid = {dia: {b.id: None for b in bqs} for dia in DIAS}
+        for s in slist:
+            if s.dia in grid and s.bloque_id in grid[s.dia]:
+                grid[s.dia][s.bloque_id] = s
+        grupos.append({
+            'horario': horario,
+            'bloques': bqs,
+            'grid': grid,
+        })
+
+    return render(request, 'scheduler/mi_horario.html', {
+        'grupos':     grupos,
+        'dias':       DIAS,
+        'dias_label': DIAS_LABEL,
+        'perfil':     perfil,
+    })
+
+
 # ── Helper ────────────────────────────────────────────────────────────────
 
 def _es_admin(user):

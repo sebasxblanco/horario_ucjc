@@ -9,6 +9,7 @@ urlpatterns = [
     path('academic/', include('academic.urls')),
     path('scheduler/', include('scheduler.urls')),
     path('limitaciones/', include('limitaciones.urls')),
+    path('reports/',      include('reports.urls')),
 ]
 
 if settings.DEBUG:

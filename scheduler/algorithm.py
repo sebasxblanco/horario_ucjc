@@ -6,14 +6,12 @@ Restricciones hard implementadas:
   RD-02  2 sesiones/semana por asignatura
   RD-03  Lunes a Viernes
   RD-04  Último curso → solo bloques de tarde
-  RD-05  Ningún grupo puede tener 2 asignaturas en el mismo slot
+         Curso híbrido (DG 5º) → mañana y tarde
+  RD-05  Un profesor no puede impartir dos asignaturas en el mismo slot
+         (se comprueba en todos los horarios BORRADOR/APROBADO existentes)
   RD-08  Alumnos sin solapamiento (mismo grupo = mismo slot libre)
   RD-10  Asignaturas compartidas → mismo slot en todas las titulaciones vinculadas
   RD-13  Evitar huecos: se asignan días consecutivos cuando es posible
-
-Orden de asignación:
-  1. Asignaturas compartidas (más restringidas — ya asignadas en otra titulación)
-  2. Asignaturas exclusivas (rellena los slots libres restantes)
 """
 
 from academic.models import Asignatura, BloqueHorario, AsignaturaCompartida
@@ -31,7 +29,6 @@ def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario, um
     Genera y persiste un HorarioGenerado en estado BORRADOR.
     Devuelve (horario, conflictos) donde conflictos es una lista de strings.
     """
-    # Elimina borrador previo para el mismo contexto (regeneración)
     HorarioGenerado.objects.filter(
         titulacion=titulacion, curso=curso_obj,
         semestre=semestre, anio_academico=anio_academico,
@@ -42,14 +39,11 @@ def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario, um
     if not bloques:
         return None, ['No hay bloques horarios activos configurados.']
 
-    # Asignaturas propias del curso
     asignaturas_propias = list(
         Asignatura.objects.filter(curso=curso_obj, semestre=semestre)
         .order_by('-es_compartida', 'nombre')
     )
 
-    # Asignaturas compartidas DESDE otra titulación hacia esta (RD-10)
-    # Ej: cuando generamos IR, incluimos FPROG/FGES/… que pertenecen a II
     from academic.models import AsignaturaCompartida as AC
     ids_propios = {a.id for a in asignaturas_propias}
     asigs_vinculadas = list(
@@ -60,13 +54,14 @@ def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario, um
         ).exclude(id__in=ids_propios).order_by('nombre')
     )
 
-    # Compartidas primero (más restringidas), luego propias exclusivas
     asignaturas = asigs_vinculadas + asignaturas_propias
     if not asignaturas:
         return None, [f'No hay asignaturas en S{semestre} para este curso.']
 
-    # Slots ya ocupados por asignaturas compartidas en OTRA titulación (RD-10)
     slots_compartidos = _slots_compartidos(titulacion, curso_obj, semestre, anio_academico)
+
+    # Slots ocupados por profesor en todos los horarios existentes (RD-05)
+    slots_profesor = _slots_ocupados_por_profesores(anio_academico)
 
     horario = HorarioGenerado.objects.create(
         titulacion=titulacion,
@@ -81,11 +76,8 @@ def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario, um
     conflictos = []
 
     for asig in asignaturas:
-        # Foro de grado: si hay umbral y la asignatura no alcanza el mínimo
-        # de alumnos, se trata como exclusiva aunque esté marcada como compartida
         cumple_foro = (umbral_foro == 0 or asig.matriculados >= umbral_foro)
         if asig.es_compartida and cumple_foro and asig.id in slots_compartidos:
-            # Reutiliza los slots de la otra titulación (RD-10)
             for dia, bloque_id in slots_compartidos[asig.id]:
                 slot = (dia, bloque_id)
                 if slot in ocupados:
@@ -99,8 +91,14 @@ def generar_horario(titulacion, curso_obj, semestre, anio_academico, usuario, um
                     dia=dia, bloque_id=bloque_id
                 )
                 ocupados[slot] = asig.id
+                # Registra el slot del profesor en la tabla en memoria
+                prof_id = _profesor_id(asig)
+                if prof_id:
+                    slots_profesor.setdefault(prof_id, set()).add(slot)
         else:
-            ok = _asignar_sesiones(horario, asig, bloques, ocupados, conflictos)
+            ok = _asignar_sesiones(
+                horario, asig, bloques, ocupados, conflictos, slots_profesor
+            )
             if not ok:
                 conflictos.append(
                     f'Sin slot disponible para {asig.codigo} — {asig.nombre}'
@@ -133,11 +131,11 @@ def hay_conflictos(horario):
 
 def _get_bloques(curso_obj):
     qs = BloqueHorario.objects.filter(activo=True).order_by('hora_inicio')
+    if getattr(curso_obj, 'es_hibrido', False):
+        return list(qs)          # DG 5º: mañana + tarde
     if curso_obj.es_ultimo:
-        qs = qs.filter(turno='TARDE')   # RD-04: último curso solo tarde
-    else:
-        qs = qs.filter(turno='MANANA')  # cursos 1-3 solo mañana
-    return list(qs)
+        return list(qs.filter(turno='TARDE'))   # RD-04
+    return list(qs.filter(turno='MANANA'))
 
 
 def _slots_compartidos(titulacion, curso_obj, semestre, anio_academico):
@@ -168,16 +166,52 @@ def _slots_compartidos(titulacion, curso_obj, semestre, anio_academico):
     return result
 
 
-def _asignar_sesiones(horario, asig, bloques, ocupados, conflictos):
+def _slots_ocupados_por_profesores(anio_academico):
+    """
+    Devuelve {profesor_id: {(dia, bloque_id), ...}} con todos los slots
+    ya asignados en horarios BORRADOR/APROBADO del mismo año académico.
+    Esto permite detectar conflictos de profesor entre titulaciones (RD-05).
+    """
+    result = {}
+    sesiones = SesionHorario.objects.filter(
+        horario__anio_academico=anio_academico,
+        horario__estado__in=[
+            HorarioGenerado.Estado.BORRADOR,
+            HorarioGenerado.Estado.APROBADO,
+        ],
+    ).select_related('asignatura__asignacion__profesor')
+
+    for s in sesiones:
+        try:
+            prof_id = s.asignatura.asignacion.profesor_id
+        except Exception:
+            continue
+        result.setdefault(prof_id, set()).add((s.dia, s.bloque_id))
+
+    return result
+
+
+def _profesor_id(asig):
+    """Devuelve el profesor_id asignado a la asignatura, o None."""
+    try:
+        return asig.asignacion.profesor_id
+    except Exception:
+        return None
+
+
+def _asignar_sesiones(horario, asig, bloques, ocupados, conflictos, slots_profesor):
     """
     Intenta asignar `asig.sesiones_semana` sesiones en días distintos.
-    Modifica `ocupados` in-place. Devuelve True si se asignaron todas.
+    Respeta:
+      - ocupados: slots ya usados por este horario (mismo grupo)
+      - slots_profesor: slots ya usados por el mismo profesor en otros horarios
+    Modifica ambas estructuras in-place. Devuelve True si se asignaron todas.
     """
     sesiones_necesarias = asig.sesiones_semana
+    prof_id = _profesor_id(asig)
     dias_usados = []
     asignadas = 0
 
-    # Intentamos días en orden; si no hay slot libre en un día, probamos el siguiente
     for dia in DIAS:
         if asignadas >= sesiones_necesarias:
             break
@@ -186,15 +220,21 @@ def _asignar_sesiones(horario, asig, bloques, ocupados, conflictos):
 
         for bloque in bloques:
             slot = (dia, bloque.id)
-            if slot not in ocupados:
-                SesionHorario.objects.create(
-                    horario=horario, asignatura=asig,
-                    dia=dia, bloque=bloque
-                )
-                ocupados[slot] = asig.id
-                dias_usados.append(dia)
-                asignadas += 1
-                break   # solo una sesión por día (RD-13: evitar huecos)
+            if slot in ocupados:
+                continue
+            # RD-05: el profesor no puede estar en otro grupo al mismo tiempo
+            if prof_id and slot in slots_profesor.get(prof_id, set()):
+                continue
+            SesionHorario.objects.create(
+                horario=horario, asignatura=asig,
+                dia=dia, bloque=bloque
+            )
+            ocupados[slot] = asig.id
+            if prof_id:
+                slots_profesor.setdefault(prof_id, set()).add(slot)
+            dias_usados.append(dia)
+            asignadas += 1
+            break   # solo una sesión por día (RD-13)
 
     return asignadas == sesiones_necesarias
 

@@ -32,6 +32,11 @@ class Curso(models.Model):
         verbose_name='¿Es último curso?',
         help_text='Las clases de este curso se generan exclusivamente por la tarde (RD-04)'
     )
+    es_hibrido = models.BooleanField(
+        default=False,
+        verbose_name='¿Horario híbrido?',
+        help_text='Las clases se pueden generar tanto por la mañana como por la tarde (Doble Grado último año)'
+    )
 
     class Meta:
         verbose_name = 'Curso'

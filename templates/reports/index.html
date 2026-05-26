@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block titulo %}Informes — Horarios UCJC{% endblock %}
+{% block top_titulo %}Informes{% endblock %}
+
+{% block contenido %}
+
+<div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-ink">Exportar Horarios</h2>
+        <p class="text-sm text-dim mt-1">Descarga los horarios en PDF o Excel</p>
+    </div>
+</div>
+
+<!-- Filtros -->
+<form method="get" class="flex items-center gap-3 flex-wrap mb-6">
+    <select name="titulacion"
+            class="bg-raised border border-stroke rounded-lg px-3 py-2 text-sm text-ink
+                   focus:outline-none focus:border-burg-light">
+        <option value="">Todas las titulaciones</option>
+        {% for tit in titulaciones %}
+        <option value="{{ tit.codigo }}" {% if tit.codigo == tit_filtro %}selected{% endif %}>
+            {{ tit.nombre }}
+        </option>
+        {% endfor %}
+    </select>
+    <select name="semestre"
+            class="bg-raised border border-stroke rounded-lg px-3 py-2 text-sm text-ink
+                   focus:outline-none focus:border-burg-light">
+        <option value="">Ambos semestres</option>
+        <option value="1" {% if sem_filtro == '1' %}selected{% endif %}>Semestre 1</option>
+        <option value="2" {% if sem_filtro == '2' %}selected{% endif %}>Semestre 2</option>
+    </select>
+    <button type="submit"
+            class="flex items-center gap-2 px-4 py-2 bg-raised border border-stroke
+                   rounded-lg text-sm text-dim font-semibold hover:text-ink transition-all">
+        <span class="material-symbols-outlined" style="font-size:16px;">filter_list</span>
+        Filtrar
+    </button>
+    {% if tit_filtro or sem_filtro %}
+    <a href="{% url 'reports:index' %}"
+       class="text-xs text-dim hover:text-ink transition-colors">Limpiar filtros</a>
+    {% endif %}
+</form>
+
+{% if horarios %}
+<div class="bg-surface border border-stroke rounded-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <table class="w-full text-sm border-collapse">
+        <thead>
+            <tr class="bg-raised border-b border-stroke">
+                <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-dim">Titulación</th>
+                <th class="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-dim">Curso</th>
+                <th class="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-dim">Semestre</th>
+                <th class="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-dim">Año</th>
+                <th class="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-dim">Estado</th>
+                <th class="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest text-dim">Exportar</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for h in horarios %}
+        <tr class="border-b border-stroke last:border-b-0 hover:bg-raised/30 transition-colors">
+            <td class="px-5 py-3 font-medium text-ink">
+                <span class="text-[11px] font-bold text-burg-light mr-2">{{ h.titulacion.codigo }}</span>
+                {{ h.titulacion.nombre }}
+            </td>
+            <td class="px-4 py-3 text-dim">{{ h.curso.numero }}º</td>
+            <td class="px-4 py-3 text-dim">S{{ h.semestre }}</td>
+            <td class="px-4 py-3 text-dim">{{ h.anio_academico }}</td>
+            <td class="px-4 py-3">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border
+                    {% if h.estado == 'APROBADO' %}bg-green-900/20 text-green-400 border-green-700/30
+                    {% elif h.estado == 'REVISION' %}bg-yellow-900/20 text-yellow-400 border-yellow-700/30
+                    {% elif h.estado == 'RECHAZADO' %}bg-burg/10 text-burg-light border-burg/20
+                    {% else %}bg-raised text-dim border-stroke{% endif %}">
+                    {{ h.get_estado_display }}
+                </span>
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-2 justify-end">
+                    <a href="{% url 'reports:pdf' h.pk %}"
+                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-burg text-ink
+                              text-xs font-bold hover:bg-burg-light transition-all">
+                        <span class="material-symbols-outlined" style="font-size:14px;">picture_as_pdf</span>
+                        PDF
+                    </a>
+                    <a href="{% url 'reports:excel' h.pk %}"
+                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-raised border border-stroke
+                              text-dim text-xs font-semibold hover:text-ink transition-all">
+                        <span class="material-symbols-outlined" style="font-size:14px;">table_chart</span>
+                        Excel
+                    </a>
+                    <a href="{% url 'scheduler:detalle' h.pk %}"
+                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-raised border border-stroke
+                              text-dim text-xs font-semibold hover:text-ink transition-all">
+                        <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
+                        Ver
+                    </a>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="bg-surface border border-stroke rounded-xl px-6 py-10 text-center">
+    <span class="material-symbols-outlined text-dim block mb-3" style="font-size:48px;">summarize</span>
+    <p class="text-sm text-dim">No hay horarios que coincidan con los filtros.</p>
+</div>
+{% endif %}
+
+{% endblock %}

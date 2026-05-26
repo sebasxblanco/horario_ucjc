@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load scheduler_tags %}
+{% block titulo %}Mi Horario — Horarios UCJC{% endblock %}
+{% block top_titulo %}Mi Horario{% endblock %}
+
+{% block contenido %}
+
+<div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-ink">Mi Horario</h2>
+        <p class="text-sm text-dim mt-1">
+            {{ perfil.user.get_full_name }} &middot;
+            <span class="text-ink">{{ perfil.departamento }}</span>
+        </p>
+    </div>
+</div>
+
+{% if not grupos %}
+<div class="bg-surface border border-stroke rounded-xl px-6 py-10 text-center">
+    <span class="material-symbols-outlined text-dim block mb-3" style="font-size:48px;">calendar_today</span>
+    <p class="text-sm text-dim">No tienes sesiones asignadas en ningún horario activo.</p>
+</div>
+{% endif %}
+
+{% for grupo in grupos %}
+{% with horario=grupo.horario bloques=grupo.bloques grid=grupo.grid %}
+
+<!-- Cabecera del horario -->
+<div class="flex items-center gap-3 mb-3 {% if not forloop.first %}mt-8{% endif %}">
+    <div>
+        <h3 class="text-base font-bold text-ink">
+            {{ horario.titulacion.nombre }} — {{ horario.curso.numero }}º curso
+        </h3>
+        <p class="text-xs text-dim">
+            Semestre {{ horario.semestre }} &middot; {{ horario.anio_academico }}
+        </p>
+    </div>
+    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border ml-2
+        {% if horario.estado == 'APROBADO' %}bg-green-900/20 text-green-400 border-green-700/30
+        {% elif horario.estado == 'REVISION' %}bg-yellow-900/20 text-yellow-400 border-yellow-700/30
+        {% elif horario.estado == 'RECHAZADO' %}bg-burg/10 text-burg-light border-burg/20
+        {% else %}bg-raised text-dim border-stroke{% endif %}">
+        {{ horario.get_estado_display }}
+    </span>
+    <a href="{% url 'scheduler:detalle' horario.pk %}"
+       class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-raised border border-stroke
+              text-dim text-xs font-semibold hover:text-ink transition-all">
+        <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
+        Ver horario completo
+    </a>
+</div>
+
+<div class="bg-surface border border-stroke rounded-xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)] overflow-x-auto mb-2">
+    <table class="w-full min-w-[640px] text-sm border-collapse">
+        <thead>
+            <tr class="bg-raised border-b border-stroke">
+                <th class="w-24 px-3 py-3 border-r border-stroke text-[10px] font-black uppercase tracking-widest text-dim text-left">Bloque</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Lunes</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Martes</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Miércoles</th>
+                <th class="px-3 py-3 border-r border-stroke text-[11px] font-black uppercase tracking-widest text-dim text-center">Jueves</th>
+                <th class="px-3 py-3 text-[11px] font-black uppercase tracking-widest text-dim text-center">Viernes</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bloque in bloques %}
+        {% with fila_lun=grid|get_item:1 fila_mar=grid|get_item:2 fila_mie=grid|get_item:3 fila_jue=grid|get_item:4 fila_vie=grid|get_item:5 %}
+        <tr class="border-b border-stroke last:border-b-0">
+            <td class="px-3 py-3 border-r border-stroke bg-raised/40 align-top">
+                <p class="text-[10px] font-bold text-ink leading-tight">{{ bloque.nombre }}</p>
+                <p class="text-[10px] text-dim">{{ bloque.hora_inicio|date:"H:i" }}–{{ bloque.hora_fin|date:"H:i" }}</p>
+                <span class="text-[9px] font-bold uppercase mt-0.5 inline-block
+                             {% if bloque.turno == 'MANANA' %}text-yellow-500{% else %}text-burg-light{% endif %}">
+                    {{ bloque.get_turno_display }}
+                </span>
+            </td>
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_lun|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_mar|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_mie|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <td class="px-2 py-2 border-r border-stroke align-top min-w-[8rem]">
+                {% with s=fila_jue|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+            <td class="px-2 py-2 align-top min-w-[8rem]">
+                {% with s=fila_vie|get_item:bloque.id %}
+                {% if s %}{% include "scheduler/_sesion_card.html" with sesion=s %}{% endif %}
+                {% endwith %}
+            </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endwith %}
+{% endfor %}
+
+{% endblock %}
