@@ -12,6 +12,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 
     {% block estilos_extra %}{% endblock %}
+
+    <style>
+    /* ── Tema claro ─────────────────────────────────────────────────────── */
+    html.light { color-scheme: light; }
+    html.light body                          { background-color:#F0F0F5!important; color:#1A1A2E!important; }
+    html.light .bg-bg                        { background-color:#F0F0F5!important; }
+    html.light .bg-surface                   { background-color:#FFFFFF!important; }
+    html.light .bg-surface\/80               { background-color:rgba(255,255,255,.8)!important; }
+    html.light .bg-surface\/60               { background-color:rgba(255,255,255,.6)!important; }
+    html.light .bg-raised                    { background-color:#E8E8EF!important; }
+    html.light .bg-raised\/40                { background-color:rgba(232,232,239,.4)!important; }
+    html.light .bg-raised\/30                { background-color:rgba(232,232,239,.3)!important; }
+    html.light .bg-deep                      { background-color:#FCEAEE!important; }
+    html.light .bg-stroke                    { background-color:#DCDCE8!important; }
+    html.light .text-ink                     { color:#1A1A2E!important; }
+    html.light .text-dim                     { color:#6B6B8A!important; }
+    html.light .text-dim\/60                 { color:rgba(107,107,138,.6)!important; }
+    html.light .border-stroke                { border-color:#DCDCE8!important; }
+    html.light .divide-stroke>:not([hidden])~:not([hidden]) { border-color:#DCDCE8!important; }
+    html.light .hover\:bg-raised:hover       { background-color:#E8E8EF!important; }
+    html.light .hover\:text-ink:hover        { color:#1A1A2E!important; }
+    html.light .shadow-\[4px_0_24px_rgba\(0\2c 0\2c 0\2c 0\.5\)\]  { box-shadow:4px 0 24px rgba(0,0,0,.08)!important; }
+    html.light .shadow-\[0_4px_24px_rgba\(0\2c 0\2c 0\2c 0\.5\)\]  { box-shadow:0 4px 24px rgba(0,0,0,.08)!important; }
+    html.light .shadow-\[0_4px_24px_rgba\(0\2c 0\2c 0\2c 0\.4\)\]  { box-shadow:0 4px 24px rgba(0,0,0,.06)!important; }
+    html.light .shadow-\[0_8px_32px_rgba\(0\2c 0\2c 0\2c 0\.6\)\]  { box-shadow:0 8px 32px rgba(0,0,0,.1)!important; }
+    html.light select option                 { background:#FFFFFF; color:#1A1A2E; }
+    html.light ::-webkit-scrollbar-track     { background:#F0F0F5; }
+    html.light select                        { background-color:#FFFFFF!important; color:#1A1A2E!important; border-color:#DCDCE8!important; }
+    html.light input                         { background-color:#FFFFFF!important; color:#1A1A2E!important; border-color:#DCDCE8!important; }
+    html.light textarea                      { background-color:#FFFFFF!important; color:#1A1A2E!important; border-color:#DCDCE8!important; }
+    /* Nav activa en tema claro */
+    html.light .bg-deep.text-burg-light      { background-color:#FCEAEE!important; }
+    </style>
 </head>
 
 <body class="bg-bg text-ink antialiased overflow-hidden flex">
@@ -212,6 +245,15 @@
             {% block top_tabs %}{% endblock %}
         </div>
         <div class="flex items-center gap-1">
+            <!-- Toggle tema oscuro/claro -->
+            <button id="theme-toggle"
+                    onclick="toggleTheme()"
+                    title="Cambiar tema"
+                    class="w-9 h-9 flex items-center justify-center rounded-full
+                           text-dim hover:text-ink hover:bg-raised transition-all">
+                <span id="theme-icon" class="material-symbols-outlined">light_mode</span>
+            </button>
+
             <button class="w-9 h-9 flex items-center justify-center rounded-full
                            text-dim hover:text-ink hover:bg-raised transition-all">
                 <span class="material-symbols-outlined">notifications</span>
@@ -302,6 +344,31 @@
 {% block scripts_extra %}{% endblock %}
 
 <script>
+// ── Tema: aplica antes del render para evitar parpadeo ─────────────────────
+(function() {
+    if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.classList.add('light');
+    }
+})();
+
+function toggleTheme() {
+    const isLight = document.documentElement.classList.toggle('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    updateThemeIcon(isLight);
+}
+
+function updateThemeIcon(isLight) {
+    const icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    icon.textContent = isLight ? 'dark_mode' : 'light_mode';
+    document.getElementById('theme-toggle').title = isLight ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro';
+}
+
+// Sincroniza el icono al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    updateThemeIcon(document.documentElement.classList.contains('light'));
+});
+
 // Cierra el dropdown de usuario al hacer click fuera de él
 document.addEventListener('click', function(e) {
     const menu = document.getElementById('user-menu');
