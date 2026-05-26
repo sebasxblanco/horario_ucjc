@@ -1,4 +1,4 @@
-# Horarios UCJC — Escuela Politécnica
+# Horarios UCJC
 
 Aplicación web de gestión y generación automática de horarios académicos para la Escuela Politécnica de la Universidad Camilo José Cela. Desarrollada como proyecto fin de asignatura en el curso 2025-26.
 
@@ -50,22 +50,6 @@ La aplicacion cubre cuatro titulaciones: Ingenieria Informatica (II), Ingenieria
 | Servidor | Gunicorn + WhiteNoise |
 | Despliegue | Railway (nixpacks, auto-deploy desde GitHub) |
 | Exportacion | ReportLab, openpyxl |
-
----
-
-## Estructura del proyecto
-
-```
-config/          Configuracion Django (settings, urls, wsgi)
-accounts/        Modelo de usuario personalizado con roles
-academic/        Titulaciones, cursos, asignaturas, profesores, disponibilidad
-scheduler/       Algoritmo de generacion, modelos de horario, vistas, exportacion
-reports/         Exportacion a PDF y Excel
-limitaciones/    Registro de restricciones especiales
-timetable/       Dashboard y pagina de inicio
-templates/       Plantillas HTML con Tailwind
-static/          CSS compilado
-```
 
 ---
 
