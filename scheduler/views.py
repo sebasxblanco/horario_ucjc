@@ -219,10 +219,9 @@ def mi_horario(request):
     """Muestra todas las sesiones asignadas al profesor que ha iniciado sesión."""
     try:
         perfil = request.user.perfil_profesor
-    except AttributeError:
-        return HttpResponseForbidden(
-            render(request, 'scheduler/403.html', status=403).content
-        )
+    except Exception:
+        messages.error(request, 'Tu cuenta no tiene perfil de profesor asignado.')
+        return redirect('scheduler:lista')
 
     sesiones = (
         SesionHorario.objects

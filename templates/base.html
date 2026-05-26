@@ -100,7 +100,7 @@
         </a>
         {% endif %}
 
-        {% if user.is_superuser or user.rol == 'PROFESOR' %}
+        {% if user.rol == 'PROFESOR' %}
         {# Mi Horario — solo profesores #}
         <a href="/scheduler/mi-horario/"
            class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
